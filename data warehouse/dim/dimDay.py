@@ -3,6 +3,43 @@ import pandas as pd
 from config import SERVER, DATABASE_OP, DATABASE_DWH, USERNAME, PASSWORD, DRIVER, DSN
 from datetime import datetime
 
+def fill_table_dim_date_test(cursor_dwh, start_date, end_date='2040-01-01', table_name='dimDay'):
+    """
+    Fills the 'dimDay' table with date-related date if the table doesn't exist, otherwise creates it.
+    Args:
+        cursor_dwh (pyodbc.Cursor): The cursor object for the 'catchem_dwh' database.
+        start_date(str): The start date for filling the table.
+        end_date(str, optional): The end date for filling the table (default is '2040-01-01').
+        table_name (str, optional): The name of the table (default is 'dimDay').
+
+    """
+ # Check if the table exists
+    try:
+        cursor_dwh.execute(f"SELECT TOP 1 * FROM {table_name}")
+    except pyodbc.Error as e:
+        if "Invalid object name" in str(e):  # Check for "Invalid object name" error
+            print(f"Table '{table_name}' does not exist. Creating it...")
+
+            # Create the table with appropriate data types
+            create_table_query = f"""
+            CREATE TABLE {table_name} (
+                [Date] date PRIMARY KEY,
+                [DayOfMonth] int,
+                [Month] int,
+                [Year] int,
+                [DayOfWeek] int,
+                [DayOfYear] int,
+                [Weekday] nvarchar(10),
+                [MonthName] nvarchar(20),
+                [Season] nvarchar(10)
+            )
+            """
+            cursor_dwh.execute(create_table_query)
+            cursor_dwh.commit()
+            print(f"Table '{table_name}' created successfully.")
+
+
+
 def fetch_min_log_time(cursor_op):
     """
     Fetches the minimum log time from the 'treasure_log' table where log_type is 2 (treasureFound).
