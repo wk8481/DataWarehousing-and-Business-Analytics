@@ -85,6 +85,8 @@ def fill_table_dim_date(cursor_dwh, start_date, end_date='2040-01-01', table_nam
         cursor_dwh.commit()
         current_date += pd.Timedelta(days=1)
 
+
+
 def get_season(date):
     """
     Returns the season based on the provided date.
@@ -121,6 +123,8 @@ def main():
 
         # # Fill table dimDaytest
         # fill_table_dim_date_test(cursor_dwh, start_time, '2100-01-01', 'dimDaytest')
+
+        #fill_table_dim_date_test(cursor_dwh, start_time, '2100-01-01', table_name='dimDay')
 
         # Fill the 'dimDay' table
         fill_table_dim_date(cursor_dwh, start_time, '2100-01-01', 'dimDay')
