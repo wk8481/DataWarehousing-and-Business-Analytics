@@ -106,16 +106,21 @@ def get_season(date):
 def main():
     try:
         # Connect to the 'catchem' database
-        conn_op = pyodbc.connect(f'DSN={DSN};UID={USERNAME};PWD={PASSWORD};DATABASE={DATABASE_OP};')
+        conn_op = pyodbc.connect(f'DRIVER={DRIVER};SERVER={SERVER};DSN={DSN};UID={USERNAME};PWD={PASSWORD};DATABASE={DATABASE_OP};')
         cursor_op = conn_op.cursor()
 
         # Connect to the 'catchem_dwh' database
-        conn_dwh = pyodbc.connect(f'DSN={DSN};UID={USERNAME};PWD={PASSWORD};DATABASE={DATABASE_DWH};')
+        conn_dwh = pyodbc.connect(f'DRIVER={DRIVER};SERVER={SERVER};DSN={DSN};UID={USERNAME};PWD={PASSWORD};DATABASE={DATABASE_DWH};')
         cursor_dwh = conn_dwh.cursor()
+
+
 
         # Fetch minimum log time where log_type is 'treasureFound'
         start_time = fetch_min_log_time(cursor_op)
         print(f"Minimum Log Time: {start_time}")
+
+        # # Fill table dimDaytest
+        # fill_table_dim_date_test(cursor_dwh, start_time, '2100-01-01', 'dimDaytest')
 
         # Fill the 'dimDay' table
         fill_table_dim_date(cursor_dwh, start_time, '2100-01-01', 'dimDay')
