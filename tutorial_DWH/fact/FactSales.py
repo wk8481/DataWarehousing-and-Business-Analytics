@@ -19,7 +19,8 @@ try:
         # Check if the sales record already exists in the fact table
         FactSales_query = "SELECT [SALES_ID] FROM FactSales WHERE [SALES_ID] = ?"
         cursor_dwh.execute(FactSales_query, Order_ID)
-        if not cursor_dwh.fetchone():  # If the record doesn't exist, insert it
+
+        if not cursor_dwh.fetchone():  # If the record doesn't exist, we want to only insert SK
             # Fetch DIM_DATE_SK
             dimDay_query = "SELECT Date_SK FROM dimDay WHERE DATE = ?"
             cursor_dwh.execute(dimDay_query, Order_Date)
