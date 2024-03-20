@@ -8,23 +8,72 @@ from dwh import establish_connection
 from tqdm import tqdm  # Import tqdm for progress bar
 
 
-conn_op = establish_connection(SERVER, DATABASE_OP, USERNAME, PASSWORD, DRIVER)
-conn_dwh = establish_connection(SERVER, DATABASE_DWH, USERNAME, PASSWORD, DRIVER)
+def fill_dim_treasure_type_table(cursor):
+    """
+    Fills the 'dimTreasureType' table with all possible combinations.
 
-#
-#
-# Create cursors
-cursor_op = conn_op.cursor()
-cursor_dwh = conn_dwh.cursor()
-#
-#
+    Args:
+        cursor (pyodbc.Cursor): Cursor object for executing SQL commands.
+    """
+    try:
+        for difficulty in range(5):  # Assuming 0-4 range for difficulty
+            for terrain in range(5):  # Assuming 0-4 range for terrain
+                for size in range(1, 4):  # Assuming 1-3 range for size
+                    for visibility in range(3):  # Assuming 0-2 range for visibility
+                        insert_query = """
+                        INSERT INTO dimTreasureType (difficulty, terrain, size, visibility)
+                        VALUES (?, ?, ?, ?)
+                        """
+                        cursor.execute(insert_query, (difficulty, terrain, size, visibility))
+
+        cursor.commit()
+        print("Treasure types inserted into 'dimTreasureType' table successfully.")
+    except pyodbc.Error as e:
+        print(f"Error inserting into 'dimTreasureType' table: {e}")
+
+
+def main():
+
+    conn_dwh = establish_connection(SERVER, DATABASE_DWH, USERNAME, PASSWORD, DRIVER)
+
+    if conn_dwh:
+        cursor = conn_dwh.cursor()
+
+
+
+        # Fill dimTreasureType table with all possible combinations
+        fill_dim_treasure_type_table(cursor)
+
+        # Close cursor and connection
+        cursor.close()
+        conn_dwh.close()
+
+
+
+if __name__ == "__main__":
+    main()
+
+
+
+
+
+
+
+
+
+
+
+
 # # Get unique treasure IDs with difficulty and terrain
 # treasure_id_query = """
-#             SELECT DISTINCT treasure_id,
-#             FROM catchem.dbo.treasure_Stage
+#             SELECT DISTINCT treasure_id, diffucutlty, terrain
+#             FROM catchem.dbo.treasure
 #             """
 # cursor_op.execute(treasure_id_query)
 # treasure_data = cursor_op.fetchall()
+#
+#
+#
 #
 # # Create Pandas DataFrame
 # df = pd.DataFrame(treasure_data, columns=['id', 'difficulty', 'terrain'])
@@ -80,12 +129,12 @@ cursor_dwh = conn_dwh.cursor()
 # conn_dwh.commit()
 # print(f"Successfully filled 'dimTreasureType' table.")
 #
-# # Close the cursors and connections
+# Close the cursors and connections
 # cursor_op.close()
 # cursor_dwh.close()
 # conn_op.close()
 # conn_dwh.close()
-#
+
 
 
 
@@ -161,116 +210,118 @@ cursor_dwh = conn_dwh.cursor()
 
 
 
+#
+# def fetch_stage_data(cursor_op):
+#     """
+#     Fetches data from the 'stage' table in the operational database.
+#     Args:
+#         cursor_op: The cursor object for the operational database.
+#     Returns:
+#         List of tuples containing stage data (visibility).
+#     """
+#     query = """
+#     SELECT visibility
+#     FROM [catchem].[dbo].[stage]
+#     """
+#     cursor_op.execute(query)
+#     return cursor_op.fetchall()
+#
+# def fetch_treasure_data(cursor_op):
+#     """
+#     Fetches data from the 'treasure' table in the operational database.
+#     Args:
+#         cursor_op: The cursor object for the operational database.
+#     Returns:
+#         List of tuples containing treasure data (id, difficulty, terrain).
+#     """
+#     query = """
+#     SELECT id, difficulty, terrain
+#     FROM [catchem].[dbo].[treasure]
+#     """
+#     cursor_op.execute(query)
+#     return cursor_op.fetchall()
+#
+# def populate_dim_treasure_type(cursor_dwh, stage_data, treasure_data):
+#     """
+#     Populates the 'dimTreasureType' table with treasure-related data.
+#     Args:
+#         cursor_dwh: The cursor object for the 'catchem_dwh' database.
+#         stage_data: List of tuples containing stage data (visibility).
+#         treasure_data: List of tuples containing treasure data (id, difficulty, terrain).
+#     """
+#     query = """
+#     INSERT INTO dimTreasureType (Difficulty, Terrain, Size, Visibility)
+#     VALUES (?, ?, ?, ?)
+#     """
+#
+#     total_treasures = len(treasure_data)
+#
+#     # Initialize tqdm with total number of treasures for progress bar
+#     with tqdm(total=total_treasures, desc="Populating dimTreasureType", unit="treasure") as pbar:
+#         for treasure in treasure_data:
+#             treasure_id = treasure[0]
+#             difficulty = treasure[1]
+#             terrain = treasure[2]
+#
+#             # Subquery to count the number of stages associated with the current treasure
+#             subquery = """
+#             SELECT COUNT(*)
+#             FROM [catchem].[dbo].[treasure_stages]
+#             WHERE treasure_id = ?
+#             """
+#             cursor_dwh.execute(subquery, (treasure_id,))
+#             num_stages = cursor_dwh.fetchone()[0]
+#
+#             for stage in stage_data:
+#                 if stage[0] == treasure_id:
+#                     visibility = stage[0]
+#                     break
+#             else:
+#               # If no matching stage found, set visibility to a default value or handle as needed
+#               visibility = 0  # Default value, change to your desired default
+#
+#             # Execute the INSERT query
+#             cursor_dwh.execute(query, (difficulty, terrain, num_stages, visibility))
+#
+#             # Increment progress bar
+#             pbar.update(1)
+#
+#     conn_dwh.commit()  # Commit changes
+#
+#     print(f"Successfully populated 'dimTreasureType' table.")
+#
+# def main():
+#     # Establish connection to operational and DWH databases
+#     conn_op = establish_connection(SERVER, DATABASE_OP, USERNAME, PASSWORD, DRIVER)
+#     conn_dwh = establish_connection(SERVER, DATABASE_DWH, USERNAME, PASSWORD, DRIVER)
+#
+#     cursor_op = conn_op.cursor()
+#     cursor_dwh = conn_dwh.cursor()
+#
+#     try:
+#         # Fetch data from operational tables
+#         stage_data = fetch_stage_data(cursor_op)
+#         treasure_data = fetch_treasure_data(cursor_op)
+#
+#         # Populate dimTreasureType table
+#         populate_dim_treasure_type(cursor_dwh, stage_data, treasure_data)
+#
+#         print("All tasks completed successfully.")
+#     except Exception as e:
+#         conn_dwh.rollback()  # Rollback changes if an error occurs
+#         print(f"Error: {str(e)}")
+#     finally:
+#         # Close cursors and connections
+#         cursor_op.close()
+#         cursor_dwh.close()
+#         conn_op.close()
+#         conn_dwh.close()
+#
+# # Execute the main function
+# if __name__ == "__main__":
+#     main()
 
-def fetch_stage_data(cursor_op):
-    """
-    Fetches data from the 'stage' table in the operational database.
-    Args:
-        cursor_op: The cursor object for the operational database.
-    Returns:
-        List of tuples containing stage data (visibility).
-    """
-    query = """
-    SELECT visibility
-    FROM [catchem].[dbo].[stage]
-    """
-    cursor_op.execute(query)
-    return cursor_op.fetchall()
 
-def fetch_treasure_data(cursor_op):
-    """
-    Fetches data from the 'treasure' table in the operational database.
-    Args:
-        cursor_op: The cursor object for the operational database.
-    Returns:
-        List of tuples containing treasure data (id, difficulty, terrain).
-    """
-    query = """
-    SELECT id, difficulty, terrain
-    FROM [catchem].[dbo].[treasure]
-    """
-    cursor_op.execute(query)
-    return cursor_op.fetchall()
-
-def populate_dim_treasure_type(cursor_dwh, stage_data, treasure_data):
-    """
-    Populates the 'dimTreasureType' table with treasure-related data.
-    Args:
-        cursor_dwh: The cursor object for the 'catchem_dwh' database.
-        stage_data: List of tuples containing stage data (visibility).
-        treasure_data: List of tuples containing treasure data (id, difficulty, terrain).
-    """
-    query = """
-    INSERT INTO dimTreasureType (Difficulty, Terrain, Size, Visibility)
-    VALUES (?, ?, ?, ?)
-    """
-
-    total_treasures = len(treasure_data)
-
-    # Initialize tqdm with total number of treasures for progress bar
-    with tqdm(total=total_treasures, desc="Populating dimTreasureType", unit="treasure") as pbar:
-        for treasure in treasure_data:
-            treasure_id = treasure[0]
-            difficulty = treasure[1]
-            terrain = treasure[2]
-
-            # Subquery to count the number of stages associated with the current treasure
-            subquery = """
-            SELECT COUNT(*)
-            FROM [catchem].[dbo].[treasure_stages]
-            WHERE treasure_id = ?
-            """
-            cursor_dwh.execute(subquery, (treasure_id,))
-            num_stages = cursor_dwh.fetchone()[0]
-
-            for stage in stage_data:
-                if stage[0] == treasure_id:
-                    visibility = stage[0]
-                    break
-            else:
-              # If no matching stage found, set visibility to a default value or handle as needed
-              visibility = 0  # Default value, change to your desired default
-
-            # Execute the INSERT query
-            cursor_dwh.execute(query, (difficulty, terrain, num_stages, visibility))
-
-            # Increment progress bar
-            pbar.update(1)
-
-    conn_dwh.commit()  # Commit changes
-
-    print(f"Successfully populated 'dimTreasureType' table.")
-
-def main():
-    # Establish connection to operational and DWH databases
-    conn_op = establish_connection(SERVER, DATABASE_OP, USERNAME, PASSWORD, DRIVER)
-    conn_dwh = establish_connection(SERVER, DATABASE_DWH, USERNAME, PASSWORD, DRIVER)
-
-    cursor_op = conn_op.cursor()
-    cursor_dwh = conn_dwh.cursor()
-
-    try:
-        # Fetch data from operational tables
-        stage_data = fetch_stage_data(cursor_op)
-        treasure_data = fetch_treasure_data(cursor_op)
-
-        # Populate dimTreasureType table
-        populate_dim_treasure_type(cursor_dwh, stage_data, treasure_data)
-
-        print("All tasks completed successfully.")
-    except Exception as e:
-        conn_dwh.rollback()  # Rollback changes if an error occurs
-        print(f"Error: {str(e)}")
-    finally:
-        # Close cursors and connections
-        cursor_op.close()
-        cursor_dwh.close()
-        conn_op.close()
-        conn_dwh.close()
-
-# Execute the main function
-if __name__ == "__main__":
-    main()
 
 
 
