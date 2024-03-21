@@ -1,17 +1,12 @@
 import pyodbc
 import pandas as pd
 
-
-
 from config import SERVER, DATABASE_OP, DATABASE_DWH, USERNAME, PASSWORD, DRIVER, DSN
 from dwh import establish_connection
-from tqdm import tqdm  # Import tqdm for progress bar
-
 
 def fill_dim_treasure_type_table(cursor):
     """
     Fills the 'dimTreasureType' table with all possible combinations.
-
     Args:
         cursor (pyodbc.Cursor): Cursor object for executing SQL commands.
     """
@@ -39,15 +34,12 @@ def main():
     if conn_dwh:
         cursor = conn_dwh.cursor()
 
-
-
         # Fill dimTreasureType table with all possible combinations
         fill_dim_treasure_type_table(cursor)
 
         # Close cursor and connection
         cursor.close()
         conn_dwh.close()
-
 
 
 if __name__ == "__main__":
