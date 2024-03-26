@@ -2,7 +2,7 @@ import requests
 import pyodbc
 from datetime import datetime, timedelta, date
 import calendar
-from config import SERVER, DATABASE_OP, DATABASE_DWH, USERNAME, PASSWORD, DRIVER, DSN
+from config import SERVER, DATABASE_OP, USERNAME, PASSWORD, DRIVER
 from dwh import establish_connection
 
 API_BASE_URL = "https://archive-api.open-meteo.com/v1/archive"
@@ -14,10 +14,10 @@ API_PARAMS = {
 }
 
 def create_weather_table(cursor):
-    """Create the 'weather_history' table in the data warehouse."""
+    """Create the 'weather_history' table in the operational database."""
     try:
         create_query = """
-        CREATE TABLE weather_history2 (
+        CREATE TABLE weather_history (
             id INT IDENTITY(1,1) PRIMARY KEY,
             date DATETIME,
             day INT,
@@ -70,7 +70,7 @@ def fetch_and_insert_hourly_weather_data(city_name, latitude, longitude, start_y
                                                                           data['hourly']['weathercode']):
                     weather_type = categorize_weather_type(precipitation)
                     datetime_obj = datetime.strptime(time, '%Y-%m-%dT%H:%M')
-                    insert_query = """INSERT INTO weather_history2 (date,day,hour, city,weather_code, weather_type) 
+                    insert_query = """INSERT INTO weather_history (date,day,hour, city,weather_code, weather_type) 
                                       VALUES (?, ?, ?,?,?,?)"""
                     cursor.execute(insert_query, (
                         datetime_obj, datetime_obj.day, datetime_obj.hour,
@@ -79,7 +79,7 @@ def fetch_and_insert_hourly_weather_data(city_name, latitude, longitude, start_y
                 print(f"Failed to fetch data for {city_name} in {year}-{month}: {response.status_code}")
                 for hour in range(24):
                     date_time = datetime(year, month, 1, hour, 0)
-                    insert_query = """INSERT INTO weather_history2 (date,day,hour, city,weather_code, weather_type) 
+                    insert_query = """INSERT INTO weather_history (date,day,hour, city,weather_code, weather_type) 
                                                      VALUES (?, ?, ?,?,?,?)"""
                     cursor.execute(insert_query, (
                         date_time, date_time.day, date_time.hour,
@@ -90,19 +90,12 @@ def fetch_and_insert_hourly_weather_data(city_name, latitude, longitude, start_y
 def main():
     # Establish connections
     conn_op = establish_connection()
-    conn_dwh = establish_connection(database=DATABASE_DWH)
-
-    if conn_op and conn_dwh:
+    if conn_op:
         try:
             cursor_op = conn_op.cursor()
-            cursor_dwh = conn_dwh.cursor()
 
-            # Create 'weather_history' table in the data warehouse
-            create_weather_table(cursor_dwh)
-
-            # Create 'dim_rain' table
-            # Create dimRain table
-            create_dim_rain(cursor_dwh)
+            # Create 'weather_history' table in the operational database
+            create_weather_table(cursor_op)
 
             # Retrieve top 10 cities with the most treasures found
             top_cities_query = """
@@ -118,16 +111,15 @@ def main():
 
             for city_info in top_cities:
                 city_name, latitude, longitude = city_info
-                fetch_and_insert_hourly_weather_data(city_name, latitude, longitude, 2020, date.today(), cursor_dwh)
+                fetch_and_insert_hourly_weather_data(city_name, latitude, longitude, 2020, date.today(), cursor_op)
 
             print("Data insertion completed.")
         except pyodbc.Error as e:
             print(f"Error processing data: {e}")
         finally:
             conn_op.close()
-            conn_dwh.close()
     else:
-        print("Connection to databases failed.")
+        print("Connection to operational database failed.")
 
 if __name__ == "__main__":
     main()

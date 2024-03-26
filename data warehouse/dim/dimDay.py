@@ -5,15 +5,14 @@ from datetime import datetime
 
 def fill_table_dim_date_test(cursor_dwh, start_date, end_date='2040-01-01', table_name='dimDay'):
     """
-    Fills the 'dimDay' table with date-related date if the table doesn't exist, otherwise creates it.
+    Creates the 'dimDay' table with date-related data if the table doesn't exist, otherwise creates it.
     Args:
         cursor_dwh (pyodbc.Cursor): The cursor object for the 'catchem_dwh' database.
         start_date(str): The start date for filling the table.
         end_date(str, optional): The end date for filling the table (default is '2040-01-01').
         table_name (str, optional): The name of the table (default is 'dimDay').
-
     """
- # Check if the table exists
+    # Check if the table exists
     try:
         cursor_dwh.execute(f"SELECT TOP 1 * FROM {table_name}")
     except pyodbc.Error as e:
@@ -23,21 +22,21 @@ def fill_table_dim_date_test(cursor_dwh, start_date, end_date='2040-01-01', tabl
             # Create the table with appropriate data types
             create_table_query = f"""
             CREATE TABLE {table_name} (
-                [Date] date PRIMARY KEY,
-                [DayOfMonth] int,
-                [Month] int,
-                [Year] int,
-                [DayOfWeek] int,
-                [DayOfYear] int,
-                [Weekday] nvarchar(10),
-                [MonthName] nvarchar(20),
-                [Season] nvarchar(10)
+                [SK] INT IDENTITY(1,1) PRIMARY KEY,
+                [Date] DATE,
+                [DayOfMonth] INT,
+                [Month] INT,
+                [Year] INT,
+                [DayOfWeek] INT,
+                [DayOfYear] INT,
+                [Weekday] NVARCHAR(10),
+                [MonthName] NVARCHAR(20),
+                [Season] NVARCHAR(10)
             )
             """
             cursor_dwh.execute(create_table_query)
             cursor_dwh.commit()
             print(f"Table '{table_name}' created successfully.")
-
 
 
 def fetch_min_log_time(cursor_op):
@@ -86,7 +85,6 @@ def fill_table_dim_date(cursor_dwh, start_date, end_date='2040-01-01', table_nam
         current_date += pd.Timedelta(days=1)
 
 
-
 def get_season(date):
     """
     Returns the season based on the provided date.
@@ -115,16 +113,12 @@ def main():
         conn_dwh = pyodbc.connect(f'DRIVER={DRIVER};SERVER={SERVER};DSN={DSN};UID={USERNAME};PWD={PASSWORD};DATABASE={DATABASE_DWH};')
         cursor_dwh = conn_dwh.cursor()
 
-
-
         # Fetch minimum log time where log_type is 'treasureFound'
         start_time = fetch_min_log_time(cursor_op)
         print(f"Minimum Log Time: {start_time}")
 
-        # # Fill table dimDaytest
-        # fill_table_dim_date_test(cursor_dwh, start_time, '2100-01-01', 'dimDaytest')
-
-        #fill_table_dim_date_test(cursor_dwh, start_time, '2100-01-01', table_name='dimDay')
+        # Fill table dimDay
+        fill_table_dim_date_test(cursor_dwh, start_time, '2100-01-01', 'dimDay')
 
         # Fill the 'dimDay' table
         fill_table_dim_date(cursor_dwh, start_time, '2100-01-01', 'dimDay')
@@ -140,3 +134,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
