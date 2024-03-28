@@ -22,7 +22,7 @@ def fill_table_dim_date_test(cursor_dwh, start_date, end_date='2040-01-01', tabl
             # Create the table with appropriate data types
             create_table_query = f"""
             CREATE TABLE {table_name} (
-                [SK] INT IDENTITY(1,1) PRIMARY KEY,
+                [day_SK] INT IDENTITY(1,1) PRIMARY KEY,
                 [Date] DATE,
                 [DayOfMonth] INT,
                 [Month] INT,

@@ -1,6 +1,6 @@
-import config
 import pyodbc
 from config import SERVER, DATABASE_OP, DATABASE_DWH, USERNAME, PASSWORD, DRIVER
+
 
 def establish_connection(server=SERVER, database=DATABASE_OP, username=USERNAME, password=PASSWORD,driver=DRIVER):
     """
