@@ -3,17 +3,24 @@ from dwh import establish_connection
 from config import SERVER, DATABASE_OP, DATABASE_DWH, USERNAME, PASSWORD, DRIVER
 
 def create_fact_table(cursor):
-    # Create the FactTreasureFound table
+    # Create the FactTreasureFound table if it doesn't exist
     cursor.execute("""
-    CREATE TABLE FactTreasureFound (
-        TREASURE_ID INT PRIMARY KEY,
-        DIM_DAY_SK INT,
-        DIM_TREASURE_TYPE_SK INT,
-        DIM_USER_SK INT,
-        RAIN_ID INT,
-        TOTAL_CACHES INT,
-        CREATED_AT DATETIME
+    IF NOT EXISTS (
+        SELECT 1
+        FROM INFORMATION_SCHEMA.TABLES
+        WHERE TABLE_NAME = 'FactTreasureFound'
     )
+    BEGIN
+        CREATE TABLE FactTreasureFound (
+            TREASURE_ID INT PRIMARY KEY,
+            DIM_DAY_SK INT,
+            DIM_TREASURE_TYPE_SK INT,
+            DIM_USER_SK INT,
+            RAIN_ID INT,
+            TOTAL_CACHES INT,
+            CREATED_AT DATETIME
+        )
+    END
     """)
 
 def main():
@@ -26,19 +33,20 @@ def main():
         cursor_op = conn_op.cursor()
         cursor_dwh = conn_dwh.cursor()
 
-        # Create the FactTreasureFound table
+        # Create the FactTreasureFound table if it doesn't exist
         create_fact_table(cursor_dwh)
 
         # Fetch data from operational database treasure_log table
         treasure_log_query = """
-        SELECT tl.id, tl.log_time, tl.hunter_id, tl.treasure_id, c.city_name
+        SELECT tl.id, tl.log_time, tl.hunter_id, tl.treasure_id, t.difficulty, t.terrain, c.city_name, c.city_id, t.owner_id
         FROM treasure_log tl
-        JOIN city c ON tl.treasure_id = c.city_id
+        JOIN Treasure t ON tl.treasure_id = t.id
+        JOIN city c ON t.city_city_id = c.city_id
         WHERE tl.log_type = 2
         """
         cursor_op.execute(treasure_log_query)
         for row in cursor_op.fetchall():
-            log_id, log_time, hunter_id, treasure_id, city_name = row
+            log_id, log_time, hunter_id, treasure_id, difficulty, terrain, city_name, city_id, owner_id = row
 
             # Check if the record already exists in the fact table
             factTreasureFound_query = "SELECT TREASURE_ID FROM FactTreasureFound WHERE TREASURE_ID = ?"
@@ -153,10 +161,10 @@ def main():
                 # Insert into FactTreasureFound
                 insert_query = """
                 INSERT INTO FactTreasureFound (TREASURE_ID, DIM_DAY_SK, DIM_TREASURE_TYPE_SK, DIM_USER_SK, RAIN_ID, TOTAL_CACHES, CREATED_AT)
-                VALUES (?, ?, ?, ?, ?, ?, GETDATE())
+                VALUES (?, ?, ?, ?, ?, ?, ?)
                 """
                 cursor_dwh.execute(insert_query,
-                                   (treasure_id, day_SK, dimTreasureType_SK, dimUser_SK, rain_id, total_caches))
+                                   (treasure_id, day_SK, dimTreasureType_SK, dimUser_SK, rain_id, total_caches, log_time))
 
         conn_dwh.commit()
         cursor_dwh.close()
@@ -167,7 +175,8 @@ def main():
         print("Data insertion completed.")
 
     except pyodbc.Error as e:
-        print(f"Error connecting to the database: {e}")
+        print(f"Error in main function: {e}")
 
+# Call the main function
 if __name__ == "__main__":
     main()
