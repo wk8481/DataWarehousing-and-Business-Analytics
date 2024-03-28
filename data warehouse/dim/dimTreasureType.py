@@ -4,6 +4,36 @@ import pandas as pd
 from config import SERVER, DATABASE_OP, DATABASE_DWH, USERNAME, PASSWORD, DRIVER, DSN
 from dwh import establish_connection
 
+# TODO: complete function for create dim table
+def create_dim_treasure_type_table(conn):
+    """
+    Create "dimTreasureType" table if it doesn't exist in the data warehouse
+    arg: (pyodbc.Connection): Database connection object
+    """
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+        IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'dimTreasureType')
+        BEGIN
+            CREATE TABLE dimTreasureType (
+                treasureType_SK INT IDENTITY(1,1) PRIMARY KEY,
+                difficulty INT NOT NULL,
+                terrain INT NOT NULL,
+                size INT NOT NULL,
+                visibility INT NULL
+            )
+        END
+        """)
+        cursor.commit()
+        print("Table 'dimTreasureType' created  successfully or already exist")
+    except pyodbc.Error as e:
+        print(f"Error creating table 'dimTreasureType': {e}")
+
+
+    
+
+
+
 def fill_dim_treasure_type_table(cursor):
     """
     Fills the 'dimTreasureType' table with all possible combinations.
@@ -33,6 +63,8 @@ def main():
 
     if conn_dwh:
         cursor = conn_dwh.cursor()
+        # create dimTreasureType table
+        create_dim_treasure_type_table(conn_dwh)
 
         # Fill dimTreasureType table with all possible combinations
         fill_dim_treasure_type_table(cursor)
