@@ -13,10 +13,16 @@ API_PARAMS = {
     "timeformat": "iso8601"
 }
 
-def create_weather_table(cursor):
+def create_weather_history_table(cursor):
     """Create the 'weather_history' table in the operational database."""
     try:
-        create_query = """
+        create_history_query = """
+        IF NOT EXISTS (
+            SELECT 1
+            FROM INFORMATION_SCHEMA.TABLES
+            WHERE TABLE_NAME = 'weather_history'
+        )
+        BEGIN
         CREATE TABLE weather_history (
             id INT IDENTITY(1,1) PRIMARY KEY,
             date DATETIME,
@@ -26,8 +32,9 @@ def create_weather_table(cursor):
             weather_code INT,
             weather_type VARCHAR(50)
         )
+        END
         """
-        cursor.execute(create_query)
+        cursor.execute(create_history_query)
         print("weather_history table created successfully.")
     except pyodbc.Error as e:
         print(f"Error creating weather_history table: {e}")
@@ -39,8 +46,8 @@ def categorize_weather_type(precipitation):
     else:
         return 'RAIN'
 
-def fetch_and_insert_hourly_weather_data(city_name, latitude, longitude, start_year, end_date, cursor):
-    """Fetch and insert hourly weather data for a city into 'weather_history'."""
+def retrieve_and_insert_hourly_weather_data(city_name, latitude, longitude, start_year, end_date, cursor):
+    """Retrieve and insert hourly weather data for a city into 'weather_history'."""
     end_year = end_date.year
     yesterday = end_date - timedelta(days=1)
 
@@ -95,10 +102,10 @@ def main():
             cursor_op = conn_op.cursor()
 
             # Create 'weather_history' table in the operational database
-            create_weather_table(cursor_op)
+            create_weather_history_table(cursor_op)
 
             # Retrieve top 10 cities with the most treasures found
-            top_cities_query = """
+            popular_cities_query = """
                 SELECT TOP (10) c.city_name, c.latitude, c.longitude
                 FROM city c
                 JOIN treasure t ON t.city_city_id = c.city_id
@@ -106,12 +113,12 @@ def main():
                 GROUP BY c.city_name, c.latitude, c.longitude
                 ORDER BY COUNT(tl.log_time) DESC
                 """
-            cursor_op.execute(top_cities_query)
-            top_cities = cursor_op.fetchall()
+            cursor_op.execute(popular_cities_query)
+            pop_cities = cursor_op.fetchall()
 
-            for city_info in top_cities:
+            for city_info in pop_cities:
                 city_name, latitude, longitude = city_info
-                fetch_and_insert_hourly_weather_data(city_name, latitude, longitude, 2020, date.today(), cursor_op)
+                retrieve_and_insert_hourly_weather_data(city_name, latitude, longitude, 2020, date.today(), cursor_op)
 
             print("Data insertion completed.")
         except pyodbc.Error as e:
