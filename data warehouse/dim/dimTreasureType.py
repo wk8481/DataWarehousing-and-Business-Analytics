@@ -4,7 +4,6 @@ import pandas as pd
 from config import SERVER, DATABASE_OP, DATABASE_DWH, USERNAME, PASSWORD, DRIVER, DSN
 from dwh import establish_connection
 
-# TODO: complete function for create dim table
 def create_dim_treasure_type_table(conn):
     """
     Create "dimTreasureType" table if it doesn't exist in the data warehouse
