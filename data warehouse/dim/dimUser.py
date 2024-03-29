@@ -91,6 +91,9 @@ def create_dimUser_table(conn):
 
 # Function to handle SCD Type 2 updates for dimUser table
 def handle_dimUser_scd(conn_op, conn_dwh):
+    # these code added to check if 'cursor' is a cursor object
+    # since we got AttributeError:: 'pyodbc.Cursor' object has no attribute 'cursor'
+
     if isinstance(conn_op, pyodbc.Cursor):
         cursor_op = conn_op
     else:
@@ -177,6 +180,8 @@ def main():
         print(f"Error connecting to the database: {e}")
 
     finally:
+        # added Try & except to avoid AttributeError
+
         try:
             cursor_op.close()
         except:
@@ -193,6 +198,8 @@ def main():
             conn_dwh.close()
         except:
             pass
+
+        # this causes AttributeError. If an object is None, calling method on it will result in AttributeError
         # if cursor_op and cursor_dwh:
         #     cursor_op.close()
         #     cursor_dwh.close()
