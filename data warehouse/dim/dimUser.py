@@ -1,4 +1,3 @@
-
 # # get city name and country name for each user by using cityId from user, countryCode
 # # Experience level : get number of caches, log type [message=0], [not found=1] [found=2] , hunter_id = user_id in user table
 # # definition of experience level
@@ -22,6 +21,9 @@ SELECT
     u.id,
     u.first_name,
     u.last_name,
+    u.mail,
+    u.number,
+    u.street,
     c.city_name,
     co.name,
     CASE
@@ -29,7 +31,7 @@ SELECT
         WHEN l.found_logs < 4 THEN 'Amateur'
         WHEN l.found_logs BETWEEN 4 AND 10 THEN 'Professional'
         ELSE 'Pirate'
-    END AS experiece_level,
+    END AS experience_level,
     CASE
         WHEN t.owner_id IS NOT NULL THEN 'Yes'
         ELSE 'No'
@@ -54,6 +56,7 @@ LEFT JOIN (
 LEFT JOIN
     treasure t ON u.id = t.owner_id   
 """
+
 
 # Function to create dimUser table if it doesn't exist
 def create_dimUser_table(conn):
@@ -89,6 +92,175 @@ def create_dimUser_table(conn):
     finally:
         cursor.close()
 
+
+# Function to check dedicator status
+# by verifying if their user_id exists in the "owner_id" column of treasure table
+def has_become_dedicator(conn_op, user_id):
+    conn_op.execute("SELECT COUNT(*) FROM treasure WHERE owner_id = ?", user_id)
+    count = conn_op.fetchone()[0]
+    return count > 0
+
+
+# Version 1
+
+
+def create_missing_records(cursor_dwh, dim_rows, user_id, first_name, last_name, city_name, country_name, dedicator,
+                           experience_level):
+    try:
+        if experience_level == 'Pirate':
+            # Check if there are missing records for Professional, Amateur, and Starter
+            if not any(row[5] == 'Professional' for row in dim_rows) or \
+                    not any(row[5] == 'Amateur' for row in dim_rows) or \
+                    not any(row[5] == 'Starter' for row in dim_rows):
+                # Insert missing historical records
+                insert_historical_records(cursor_dwh, user_id, first_name, last_name, city_name, country_name,
+                                          'Professional', dedicator)
+                insert_historical_records(cursor_dwh, user_id, first_name, last_name, city_name, country_name,
+                                          'Amateur', dedicator)
+                insert_historical_records(cursor_dwh, user_id, first_name, last_name, city_name, country_name,
+                                          'Starter', dedicator)
+        elif experience_level == 'Professional':
+            # Check if there are missing records for Amateur and Starter
+            if not any(row[5] == 'Amateur' for row in dim_rows) or \
+                    not any(row[5] == 'Starter' for row in dim_rows):
+                # Insert missing historical records
+                insert_historical_records(cursor_dwh, user_id, first_name, last_name, city_name, country_name,
+                                          'Amateur', dedicator)
+                insert_historical_records(cursor_dwh, user_id, first_name, last_name, city_name, country_name,
+                                          'Starter', dedicator)
+        elif experience_level == 'Amateur':
+            # Check if there are missing records for Starter
+            if not any(row[5] == 'Starter' for row in dim_rows):
+                # Insert missing historical record
+                insert_historical_records(cursor_dwh, user_id, first_name, last_name, city_name, country_name,
+                                          'Starter', dedicator)
+
+    except pyodbc.Error as e:
+        print(f"Error creating missing records: {e}")
+
+
+def insert_historical_records(cursor_dwh, user_id, first_name, last_name, city_name, country_name, experience_level,
+                              dedicator):
+    try:
+        insert_query = """INSERT INTO dimUser (userId, first_name, last_name, city_name, country_name,
+                                                experience_level, dedicator, scd_start, scd_end, scd_version,
+                                                scd_active)
+                          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"""
+        cursor_dwh.execute(insert_query, (user_id, first_name, last_name, city_name, country_name,
+                                          experience_level, dedicator, datetime.now(),
+                                          datetime.now(), 1, 0))
+    except pyodbc.Error as e:
+        print(f"Error inserting historical record: {e}")
+
+
+# Version 2
+
+# def create_missing_records(cursor_dwh, dim_rows, user_id, first_name, last_name, city_name, country_name, dedicator,
+#                            experience_level):
+#     try:
+#         # Check if there are missing records for the provided experience level
+#         if experience_level == 'Pirate' and not any(row[5] == 'Pirate' for row in dim_rows):
+#             # Insert missing historical record for 'Pirate'
+#             insert_historical_record(cursor_dwh, user_id, first_name, last_name, city_name, country_name,
+#                                      'Pirate', dedicator)
+#         elif experience_level == 'Professional' and not any(row[5] == 'Professional' for row in dim_rows):
+#             # Insert missing historical record for 'Professional'
+#             insert_historical_record(cursor_dwh, user_id, first_name, last_name, city_name, country_name,
+#                                      'Professional', dedicator)
+#         elif experience_level == 'Amateur' and not any(row[5] == 'Amateur' for row in dim_rows):
+#             # Insert missing historical record for 'Amateur'
+#             insert_historical_record(cursor_dwh, user_id, first_name, last_name, city_name, country_name,
+#                                      'Amateur', dedicator)
+#         elif experience_level == 'Starter' and not any(row[5] == 'Starter' for row in dim_rows):
+#             # Insert missing historical record for 'Starter'
+#             insert_historical_record(cursor_dwh, user_id, first_name, last_name, city_name, country_name,
+#                                      'Starter', dedicator)
+#     except pyodbc.Error as e:
+#         print(f"Error creating missing records: {e}")
+#
+# def insert_historical_record(cursor_dwh, user_id, first_name, last_name, city_name, country_name, experience_level,
+#                              dedicator):
+#     try:
+#         # Insert a new historical record for the user with the provided details and experience level
+#         insert_query = """INSERT INTO dimUser (userId, first_name, last_name, city_name, country_name,
+#                                                 experience_level, dedicator, scd_start, scd_end, scd_version,
+#                                                 scd_active)
+#                           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"""
+#         cursor_dwh.execute(insert_query, (user_id, first_name, last_name, city_name, country_name,
+#                                           experience_level, dedicator, datetime.now(),
+#                                           '', latest_version + 1, 1))
+#     except pyodbc.Error as e:
+#         print(f"Error inserting historical record: {e}")
+
+
+# def get_earliest_found_log_time(conn_op, user_id):
+#     try:
+#         conn_op.execute("""
+#         SELECT MIN(log_time)
+#         FROM treasure_log
+#         WHERE hunter_id = ? AND log_type = 2
+#         """, user_id )
+#         earliest_log_time = conn_op.fetchone()[0]
+#         return earliest_log_time if earliest_log_time else None
+#     except pyodbc.Error as e :
+#         print(f"Error retrieveing earlieset found log time for user{user_id}: {e}")
+#         return None
+#
+
+def get_earliest_log_times(cursor_op, cursor_dwh, user_id, first_name, last_name, city_name, country_name, dedicator, experience_level, latest_version):
+    try:
+        # Get the earliest log time for each experience level
+        log_time_query = """
+        SELECT hunter_id, log_time, ROW_NUMBER() OVER(PARTITION BY hunter_id ORDER BY log_time) AS row_num
+        FROM treasure_log
+        WHERE hunter_id = ? AND log_type = 2
+        """
+        cursor_op.execute(log_time_query, user_id)
+        log_rows = cursor_op.fetchall()
+
+        for log_row in log_rows:
+            hunter_id, log_time, row_num = log_row
+            if row_num == 1:
+                starter_log_time = log_time
+                starter_insert_query = """INSERT INTO dimUser (userId, first_name, last_name, city_name, country_name,
+                                                              experience_level, dedicator, scd_start, scd_end, scd_version,
+                                                              scd_active)
+                                          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"""
+                cursor_dwh.execute(starter_insert_query, (user_id, first_name, last_name, city_name, country_name,
+                                                          'Starter', dedicator, starter_log_time,
+                                                          datetime.now(), latest_version + 1, 1))
+            elif row_num == 4:
+                amateur_log_time = log_time
+                amateur_insert_query = """INSERT INTO dimUser (userId, first_name, last_name, city_name, country_name,
+                                                              experience_level, dedicator, scd_start, scd_end, scd_version,
+                                                              scd_active)
+                                          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"""
+                cursor_dwh.execute(amateur_insert_query, (user_id, first_name, last_name, city_name, country_name,
+                                                          'Amateur', dedicator, amateur_log_time,
+                                                          datetime.now(), latest_version + 1, 1))
+            elif row_num == 11:
+                professional_log_time = log_time
+                professional_insert_query = """INSERT INTO dimUser (userId, first_name, last_name, city_name, country_name,
+                                                                   experience_level, dedicator, scd_start, scd_end, scd_version,
+                                                                   scd_active)
+                                               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"""
+                cursor_dwh.execute(professional_insert_query, (user_id, first_name, last_name, city_name, country_name,
+                                                               'Professional', dedicator, professional_log_time,
+                                                               datetime.now(), latest_version + 1, 1))
+            elif row_num > 10:
+                pirate_log_time = log_time
+                pirate_insert_query = """INSERT INTO dimUser (userId, first_name, last_name, city_name, country_name,
+                                                           experience_level, dedicator, scd_start, scd_end, scd_version,
+                                                           scd_active)
+                                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"""
+                cursor_dwh.execute(pirate_insert_query, (user_id, first_name, last_name, city_name, country_name,
+                                                         'Pirate', dedicator, pirate_log_time,
+                                                         datetime.now(), latest_version + 1, 1))
+    except pyodbc.Error as e:
+        print(f"Error getting earliest log times: {e}")
+
+
+
 # Function to handle SCD Type 2 updates for dimUser table
 def handle_dimUser_scd(conn_op, conn_dwh):
     # these code added to check if 'cursor' is a cursor object
@@ -106,14 +278,14 @@ def handle_dimUser_scd(conn_op, conn_dwh):
 
     try:
         # Execute the user_query
-        print("Extracting user data from chachem db...")
+        print("Extracting user data from cachem db...")
         cursor_op.execute(user_query)
         print("Query execution complete")
         rows = cursor_op.fetchall()
 
         for row in rows:
             # Extract data from the source table
-            user_id, first_name, last_name, city_name, country_name, experience_level, dedicator = row
+            user_id, first_name, last_name, mail, number, street, city_name, country_name, experience_level, dedicator = row
 
             # Execute query to check SCD Type 2 for userId
             cursor_dwh.execute("SELECT userId, scd_version FROM dimUser WHERE userId = ? AND scd_active = 1",
@@ -127,26 +299,41 @@ def handle_dimUser_scd(conn_op, conn_dwh):
                                                         scd_active)
                                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"""
                 cursor_dwh.execute(insert_query, (user_id, first_name, last_name, city_name, country_name,
-                                                   experience_level, dedicator, datetime.now(),
-                                                   '', 1, 1))
+                                                  experience_level, dedicator, datetime.now(),
+                                                  '', 1, 1))
+
+
             else:
                 # Get the latest version and attributes
                 latest_version = max(dim_rows, key=lambda x: x[1])[1]
 
-                # Update the SCD attributes of the latest version if any changes
-                update_query = """UPDATE dimUser SET scd_end = ?, scd_version = ?, scd_active = ?
-                                  WHERE userId = ? AND scd_active = 1"""
-                cursor_dwh.execute(update_query, (datetime.now(), latest_version, 0, user_id))
+                # checks if there are any differences between the attributes of the current row from op database & the rows in the dwh
+                if any(row != dim_row[:-2] for dim_row in dim_rows) or has_become_dedicator(user_id):
+                    # Update the SCD attributes of the latest version if any changes
+                    update_query = """UPDATE dimUser SET scd_end = ?, scd_version = ?, scd_active = ?
+                                      WHERE userId = ? AND scd_active = 1"""
+                    cursor_dwh.execute(update_query, (datetime.now(), latest_version, 0, user_id))
 
-                # Insert a new record into dimUser with a new version
-                insert_query = """INSERT INTO dimUser (userId, first_name, last_name, city_name, country_name,
-                                                      experience_level, dedicator, scd_start, scd_end, scd_version,
-                                                      scd_active)
-                                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"""
-                cursor_dwh.execute(insert_query, (user_id, first_name, last_name, city_name, country_name,
-                                                   experience_level, dedicator, datetime.now(),
-                                                   '', latest_version + 1, 1))
+                    # Insert a new record into dimUser with a new version
+                    insert_query = """INSERT INTO dimUser (userId, first_name, last_name, city_name, country_name,
+                                                          experience_level, dedicator, scd_start, scd_end, scd_version,
+                                                          scd_active)
+                                      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"""
+                    cursor_dwh.execute(insert_query, (user_id, first_name, last_name, city_name, country_name,
+                                                      experience_level, dedicator, datetime.now(),
+                                                      '', latest_version + 1, 1))
 
+                    # Check for missing historical records based on log times
+                    get_earliest_log_times(cursor_op, cursor_dwh, user_id, first_name, last_name, city_name, country_name, dedicator,
+                                           experience_level, latest_version)
+
+
+                    # Create missing historical records if needed
+                    create_missing_records(cursor_dwh, dim_rows, user_id, first_name, last_name, city_name,
+                                           country_name,
+                                           dedicator, experience_level)
+
+        # compare user address in operational database and if there is changes
         # Commit the transaction for all rows
         conn_dwh.commit()
         print("SCD Type 2 handling for dimUser completed successfully")
@@ -158,6 +345,7 @@ def handle_dimUser_scd(conn_op, conn_dwh):
             cursor_op.close()
         if not isinstance(conn_dwh, pyodbc.Cursor):
             cursor_dwh.close()
+
 
 # Function to establish connections and call the necessary functions
 def main():
@@ -208,6 +396,6 @@ def main():
         #     conn_op.close()
         #     conn_dwh.close()
 
-if __name__ == "__main__":
-        main()
 
+if __name__ == "__main__":
+    main()
