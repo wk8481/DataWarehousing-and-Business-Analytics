@@ -73,10 +73,10 @@ def retrieve_and_insert_hourly_weather_data(city_name, latitude, longitude, star
             start_date = datetime(year, month, 1)
             # This creates a datetime object for the last day of the current month and year.
             end_date = datetime(year, month, calendar.monthrange(year, month)[1])
-            # if year == yesterday.year and month == yesterday.month: This condition checks if the current year and month
-            # match yesterday's year and month. end_date = yesterday If the condition is met, end_date is set to
-            # yesterday. This adjustment ensures that we don't fetch data for the current day since it might not have
-            # complete data for the full day yet.
+            # if year == yesterday.year and month == yesterday.month: This condition checks if the current year and
+            # month match yesterday's year and month. end_date = yesterday If the condition is met, end_date is set
+            # to yesterday. This adjustment ensures that we don't fetch data for the current day since it might not
+            # have complete data for the full day yet.
             if year == yesterday.year and month == yesterday.month:
                 end_date = yesterday
 
