@@ -443,6 +443,7 @@ def main():
 
         # Create the 'factTreasureFound' table
         create_table(cursor_dwh)
+        print(f"create fact table successfully")
 
         # Empty the 'factTreasureFound' table
         empty_fact_treasure_found(cursor_dwh)
