@@ -125,6 +125,56 @@ this is the output:
 -- with variations observed across different days, higher counts on weekdays, fluctuations across months, particularly in September, and increased activity during the Autumn season.
 
 
+-- TODO:[S2] How does the type of user affect the duration of the treasure hunt? Does a beginner take longer?
+SELECT
+    u.experience_level,
+    AVG(f.Duration) AS average_duration
+FROM
+    dbo.factTreasureFound f
+INNER JOIN
+    dimUser u ON f.DIM_USER_SK = u.user_SK
+GROUP BY
+    u.experience_level;
+
+--TODO:output
+-- experience_level / average_duration
+-- Pirate	            3177
+-- Professional	    4830
+-- Starter	            3541
+
+--TODO:[S2] On average, do users find the cache faster in the rain?
+SELECT r.rain_category,
+		AVG(ft.Duration) AS AvgTreasureFound
+FROM dbo.dimRain r
+JOIN dbo.factTreasureFound ft ON r.rain_id = ft.RAIN_ID
+JOIN dbo.dimTreasureType tt ON ft.DIM_TREASURE_TYPE_SK = tt.treasureType_SK
+GROUP BY r.rain_category
+ORDER BY r.rain_category;
+
+--TODO:output
+-- rain_category / AvgTreasureFound
+-- No Rain      / 3469
+
+
+--TODO:[S2] Are novice users on average looking for caches with more stages?
+SELECT
+    u.experience_level,
+    AVG(t.size) AS average_num_stages
+FROM
+    dimUser u
+JOIN
+    dbo.factTreasureFound f ON u.user_SK = f.DIM_USER_SK
+JOIN
+    dimTreasureType t ON f.DIM_TREASURE_TYPE_SK = t.treasureType_SK
+GROUP BY
+    u.experience_level;
+
+--TODO:output
+-- experience_level / average_num_stages
+-- Pirate             1
+-- Professional       1
+-- Starter            1
+
 -- additional questions:
 
 -- Does leaderboard or rankings differ for different countries and cities?
@@ -245,3 +295,4 @@ ORDER BY
 -- answer
 -- Based on the provided data, it seems that caches with a visibility of 0 and 2 have been found only once each.
 -- This indicates that caches with hidden stage visibility pose a challenge to find, even for professionals, as they have been found infrequently compared to caches with other visibility levels.
+
