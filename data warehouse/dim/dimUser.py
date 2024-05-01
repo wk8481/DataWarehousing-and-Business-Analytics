@@ -79,7 +79,7 @@ def create_dimUser_table(conn):
     IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'dimUser')
     BEGIN
         CREATE TABLE dimUser (
-            user_SK INT IDENTITY(1,1) NOT NULL,
+            user_SK INT IDENTITY(1,1) PRIMARY KEY,
             userId BINARY(16) NOT NULL,    
             first_name NVARCHAR(255) NOT NULL,
             last_name NVARCHAR(255) NOT NULL,
