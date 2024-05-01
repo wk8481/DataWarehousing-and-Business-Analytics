@@ -52,16 +52,16 @@ def fill_dim_treasure_type_table(cursor):
 
 def analyze_execution_plan(cursor, query):
     """
-    Analyze the execution plan of a given query using SET STATISTICS PROFILE ON.
+    Analyze the execution plan of a given query using SET SHOWPLAN_ALL.
     Args:
         cursor (pyodbc.Cursor): Cursor object for executing SQL commands.
         query (str): SQL query to be analyzed.
     """
     try:
-        # Enable execution plan statistics
-        cursor.execute("SET STATISTICS PROFILE ON")
+        # Enable execution plan display
+        cursor.execute("SET SHOWPLAN_ALL ON")
 
-        # Execute the query
+        # Execute the query (this will not return actual results but will provide the execution plan)
         cursor.execute(query)
 
         # Fetch and print the execution plan
@@ -69,11 +69,10 @@ def analyze_execution_plan(cursor, query):
         for row in cursor.fetchall():
             print(row)
 
-        # Disable execution plan statistics
-        cursor.execute("SET STATISTICS PROFILE OFF")
+        # Disable execution plan display
+        cursor.execute("SET SHOWPLAN_ALL OFF")
     except pyodbc.Error as e:
         print(f"Error analyzing execution plan: {e}")
-
 
 
 def create_indexed_view(cursor):
@@ -82,31 +81,40 @@ def create_indexed_view(cursor):
         cursor.execute("SET NUMERIC_ROUNDABORT OFF")
         cursor.execute("SET ANSI_PADDING, ANSI_WARNINGS, CONCAT_NULL_YIELDS_NULL, ARITHABORT, QUOTED_IDENTIFIER, ANSI_NULLS ON")
 
-        # Step 2: Create the view with SCHEMABINDING
+        # Step 2: Drop the index if it exists
         cursor.execute("""
-            CREATE VIEW vw_DimTreasureType_Indexed
-AS
-SELECT 
-    difficulty,
-    terrain,
-    COUNT_BIG(*) AS size,
-    SUM(CAST(visibility AS FLOAT)) AS total_visibility
-FROM 
-    dbo.dimTreasureType
-GROUP BY 
-    difficulty, terrain;
-
+            IF EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_DimTreasureType_Indexed' AND object_id = OBJECT_ID('vw_DimTreasureType_Indexed'))
+            BEGIN
+                DROP INDEX IX_DimTreasureType_Indexed ON vw_DimTreasureType_Indexed;
+            END
         """)
 
-        # Step 3: Create the unique clustered index on the view
+        # Step 3: Create the view with SCHEMABINDING
         cursor.execute("""
-            CREATE UNIQUE CLUSTERED INDEX IX_MyIndexedView 
-            ON dbo.MyIndexedView (difficulty, terrain)
+            CREATE VIEW vw_DimTreasureType_Indexed
+            WITH SCHEMABINDING
+            AS
+            SELECT 
+                difficulty,
+                terrain,
+                COUNT_BIG(*) AS size,
+                SUM(ISNULL(CAST(visibility AS FLOAT), 0)) AS total_visibility
+            FROM 
+                dbo.dimTreasureType
+            GROUP BY 
+                difficulty, terrain;
+        """)
+
+        # Step 4: Create the unique clustered index on the view
+        cursor.execute("""
+            CREATE UNIQUE CLUSTERED INDEX IX_DimTreasureType_Indexed 
+            ON vw_DimTreasureType_Indexed (difficulty, terrain);
         """)
 
         print("Indexed view created successfully.")
     except pyodbc.Error as e:
         print(f"Error creating indexed view: {e}")
+
 
 def main():
     conn_dwh = establish_connection(SERVER, DATABASE_DWH, USERNAME, PASSWORD, DRIVER)
