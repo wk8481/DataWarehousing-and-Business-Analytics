@@ -52,5 +52,46 @@ cursor_op.close()
 cursor_dwh.close()
 conn_op.close()
 conn_dwh.close()
-
-
+#
+# cursor_dwh.execute(select_latestSCD, (userId,))
+# scd_result = cursor_dwh.fetchone()
+#
+# cursor_dwh.execute(select_addressAndDedicator, (userId,))
+# addressAndDedicator_result = cursor_dwh.fetchone()
+#
+# if scd_result is not None and addressAndDedicator_result is not None:
+#     scd_version, latest_scd_end = scd_result
+#     existing_number, existing_street, existing_city_name, existing_country_name, existing_is_dedicator = addressAndDedicator_result
+# else:
+#     print("No data found for the provided userId")
+#     continue
+#
+# if latest_scd_end and latest_scd_end > scd_start:  # if max_scd_end is not null, it's later than sdc_start
+#     scd_start = latest_scd_end  # set start from last end date
+#
+# if scd_version:
+#     scd_version += 1
+# else:
+#     scd_version = 1
+# #
+# # # Check if any of the attributes have changed
+# # if (existing_number != number or existing_street != street or existing_city_name != city_name
+# #         or existing_country_name != country_name or existing_is_dedicator != is_dedicator):
+# #     scd_version += 1
+# #
+# # # Insert or update record in the data warehouse
+# insert_query = """
+#       INSERT INTO dimUser (userId, first_name, last_name, number, street, city_name, country_name,
+#        experience_level, scd_start, scd_end, scd_version, scd_active)
+#       VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
+#   """
+# cursor_dwh.execute(insert_query, (userId, first_name, last_name, number, street, city_name, country_name,
+#                                   experience_level, scd_start, scd_end, scd_version, 1))
+#
+# if latest_scd_end:
+#     update_query = """
+#           UPDATE dimUser
+#           SET scd_end = ?, scd_active = ?
+#           WHERE userId = ? AND scd_version = ? AND scd_active = 1
+#       """
+#     cursor_dwh.execute(update_query, (scd_start, 0, userId, scd_version - 1))
