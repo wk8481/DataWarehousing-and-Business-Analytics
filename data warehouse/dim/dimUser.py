@@ -175,7 +175,7 @@ def main():
         #create_dimUser_table(conn_dwh)
 
         # # only runs for the first time
-        #insert_first_run_data(cursor_op,cursor_dwh)
+        # insert_first_run_data(cursor_op,cursor_dwh)
 
         # Handle SCD Type 2 updates for dimUser
         handle_dimUser_scd(cursor_op, cursor_dwh)
