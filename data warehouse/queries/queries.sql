@@ -176,6 +176,18 @@ GROUP BY
     tt.difficulty
 ORDER BY
     FoundCount DESC;
+--output
+-- for question 2 this is the output:
+-- difficulty	FoundCount
+-- 2	199
+-- 3	106
+-- 1	99
+-- 4	64
+-- 0	41
+--
+-- Based on the provided data, it appears that caches with a difficulty level of 2 are the most popular at the moment, with 199 found counts.
+-- This suggests that caches with a moderate difficulty level are sought after by various people. The popularity decreases as the difficulty level increases,
+-- with fewer caches found for difficulty levels 3, 1, 4, and 0, respectively.
 
 -- Is there any difference between the cache number based on physical and virtual?
 SELECT
@@ -194,6 +206,20 @@ GROUP BY
         ELSE 'Virtual'
         END;
 
+--CacheType	FoundCount
+-- Physical	53
+-- Virtual	456
+--
+-- answer:
+-- Based on the provided data, there is a clear difference between the number of physical and virtual caches found.
+--
+-- Physical caches have been found 53 times.
+-- Virtual caches, on the other hand, have been found much more frequently, with 456 found counts.
+--
+-- This suggests that virtual caches are currently more popular or easier to find compared to physical caches.
+
+
+
 --Does the hidden stage visibility make it challenging to find caches even for professionals?
 SELECT
     tt.visibility,
@@ -210,3 +236,12 @@ GROUP BY
     tt.visibility
 ORDER BY
     FoundCount DESC;
+
+--output
+-- visibility	FoundCount
+-- 0	1
+-- 2	1
+--
+-- answer
+-- Based on the provided data, it seems that caches with a visibility of 0 and 2 have been found only once each.
+-- This indicates that caches with hidden stage visibility pose a challenge to find, even for professionals, as they have been found infrequently compared to caches with other visibility levels.
