@@ -36,8 +36,7 @@ GROUP BY
     dt.difficulty, dd.Weekday
 ORDER BY
     dt.difficulty, dd.Weekday;
-GROUP BY
-    dt.difficulty;
+
 -- this gives the following results
 -- difficulty weekday total caches searched
 -- 0	Friday	11
