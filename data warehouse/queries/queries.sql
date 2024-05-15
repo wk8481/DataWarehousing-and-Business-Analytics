@@ -21,7 +21,7 @@ ORDER BY
     -- If the query yields no searches for caches in difficult terrain during rainy conditions, it indicates that,
 -- on average, fewer caches are searched in more difficult terrain when it rains. Therefore people wont go searching when its raining for a specific terrain
 
--- Are more difficult caches done on weekends?
+--(Manami) Are more difficult caches done on weekends?
 SELECT
     dt.difficulty,
     dd.Weekday,
@@ -124,7 +124,7 @@ this is the output:
 -- with variations observed across different days, higher counts on weekdays, fluctuations across months, particularly in September, and increased activity during the Autumn season.
 
 
---() TODO:[S2] How does the type of user affect the duration of the treasure hunt? Does a beginner take longer?
+--(william) TODO:[S2] How does the type of user affect the duration of the treasure hunt? Does a beginner take longer?
 SELECT
     u.experience_level,
     AVG(f.Duration) AS average_duration
@@ -176,7 +176,7 @@ GROUP BY
 
 -- additional questions:
 
--- Does leaderboard or rankings differ for different countries and cities?
+--(Manami) Does leaderboard or rankings differ for different countries and cities?
 SELECT
     u.address AS Location,
     COUNT(*) AS FoundCount
