@@ -36,8 +36,7 @@ GROUP BY
     dt.difficulty, dd.Weekday
 ORDER BY
     dt.difficulty, dd.Weekday;
-GROUP BY
-    dt.difficulty;
+
 -- this gives the following results
 -- difficulty weekday total caches searched
 -- 0	Friday	11
@@ -80,7 +79,7 @@ GROUP BY
 -- Based on the data provided, it appears that more difficult caches are typically searched on weekends compared to weekdays,
 -- with higher totals observed for difficulty levels 2, 3, and 4.
 
--- What role do date parameters (days, weeks, months, season) have on the number of caches?
+--(William) What role do date parameters (days, weeks, months, season) have on the number of caches?
 SELECT
     dd.DayOfMonth,
     dd.Weekday,
@@ -125,7 +124,7 @@ this is the output:
 -- with variations observed across different days, higher counts on weekdays, fluctuations across months, particularly in September, and increased activity during the Autumn season.
 
 
--- TODO:[S2] How does the type of user affect the duration of the treasure hunt? Does a beginner take longer?
+--() TODO:[S2] How does the type of user affect the duration of the treasure hunt? Does a beginner take longer?
 SELECT
     u.experience_level,
     AVG(f.Duration) AS average_duration
