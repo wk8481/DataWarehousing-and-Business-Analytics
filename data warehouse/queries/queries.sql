@@ -99,7 +99,7 @@ ORDER BY
     dd.DayOfMonth, dd.MonthName, dd.Season;
 
 -- the output
-this is the output:
+
 
 -- day of month weekday monthname Season total caches seacrhed
 --

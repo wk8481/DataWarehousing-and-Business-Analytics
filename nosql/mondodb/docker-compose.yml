@@ -1,42 +1,109 @@
-version: '3.8'
-
+version: '3'
 services:
-  mongodb1:
-    image: mongo
+  mongo-shard1-1:
+    image: mongo:5
     ports:
-      - "27017:27017"
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD: example
-    volumes:
-      - ./mongodb1:/data/db
+      - "27101:27017"
+    command: mongod --shardsvr --replSet mongo-shard1-rs --port 27017 --bind_ip_all
     networks:
-      - mongo-cluster
+      - mongodb-network
 
-  mongodb2:
-    image: mongo
+  mongo-shard1-2:
+    image: mongo:5
+    command: mongod --shardsvr --replSet mongo-shard1-rs --port 27017 --bind_ip_all
+    networks:
+      - mongodb-network
+
+  mongo-shard1-3:
+    image: mongo:5
+    command: mongod --shardsvr --replSet mongo-shard1-rs --port 27017 --bind_ip_all
+    networks:
+      - mongodb-network
+
+  mongo-shard2-1:
+    image: mongo:5
     ports:
-      - "27018:27017"
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD: example
-    volumes:
-      - ./mongodb2:/data/db
+      - "27201:27017"
+    command: mongod --shardsvr --replSet mongo-shard2-rs --port 27017 --bind_ip_all
     networks:
-      - mongo-cluster
+      - mongodb-network
 
-  mongodb3:
-    image: mongo
+  mongo-shard2-2:
+    image: mongo:5
+    command: mongod --shardsvr --replSet mongo-shard2-rs --port 27017 --bind_ip_all
+    networks:
+      - mongodb-network
+
+  mongo-shard2-3:
+    image: mongo:5
+    command: mongod --shardsvr --replSet mongo-shard2-rs --port 27017 --bind_ip_all
+    networks:
+      - mongodb-network
+
+  mongo-shard3-1:
+    image: mongo:5
+    ports:
+      - "27301:27017"
+    command: mongod --shardsvr --replSet mongo-shard3-rs --port 27017 --bind_ip_all
+    networks:
+      - mongodb-network
+
+  mongo-shard3-2:
+    image: mongo:5
+    command: mongod --shardsvr --replSet mongo-shard3-rs --port 27017 --bind_ip_all
+    networks:
+      - mongodb-network
+
+  mongo-shard3-3:
+    image: mongo:5
+    command: mongod --shardsvr --replSet mongo-shard3-rs --port 27017 --bind_ip_all
+    networks:
+      - mongodb-network
+
+  mongo-config-server-1:
+    image: mongo:5
     ports:
       - "27019:27017"
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD: example
-    volumes:
-      - ./mongodb3:/data/db
+    command: mongod --configsvr --replSet mongo-config-server-rs --port 27017 --bind_ip_all
     networks:
-      - mongo-cluster
+      - mongodb-network
+
+  mongo-config-server-2:
+    image: mongo:5
+    command: mongod --configsvr --replSet mongo-config-server-rs --port 27017 --bind_ip_all
+    networks:
+      - mongodb-network
+
+  mongo-config-server-3:
+    image: mongo:5
+    command: mongod --configsvr --replSet mongo-config-server-rs --port 27017 --bind_ip_all
+    networks:
+      - mongodb-network
+
+  mongos-router-1:
+    image: mongo:5
+    ports:
+      - "27017:27017"
+    command: mongos --configdb mongo-config-server-rs/mongo-config-server-1:27017,mongo-config-server-2:27017,mongo-config-server-3:27017 --bind_ip_all
+    depends_on:
+      - mongo-config-server-1
+      - mongo-config-server-2
+      - mongo-config-server-3
+    networks:
+      - mongodb-network
+
+  mongos-router-2:
+    image: mongo:5
+    ports:
+      - "27018:27017"
+    command: mongos --configdb mongo-config-server-rs/mongo-config-server-1:27017,mongo-config-server-2:27017,mongo-config-server-3:27017 --bind_ip_all
+    depends_on:
+      - mongo-config-server-1
+      - mongo-config-server-2
+      - mongo-config-server-3
+    networks:
+      - mongodb-network
 
 networks:
-  mongo-cluster:
+  mongodb-network:
     driver: bridge

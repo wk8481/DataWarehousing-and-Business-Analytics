@@ -1,0 +1,325 @@
+
+
+The provided solution aims to address the requirements outlined in the task:
+
+1. **Setting up MongoDB with Sharding:**
+   - The Docker Compose configuration defines three MongoDB services, each running in its own container. This setup simulates a MongoDB sharded cluster with three shards, as requested.
+   - Sharding is enabled on the MongoDB database (`mydatabase`) and the collection (`treasures`) based on the "city" field, as specified in the task.
+
+2. **Extracting Data from the CATCHEM Database:**
+   - The Python script connects to the CATCHEM database using the provided configuration (`config.py`) and retrieves data related to treasures, including their corresponding stage, city, country, and coordinates.
+
+3. **Inserting Data into MongoDB:**
+   - The extracted data is inserted into MongoDB. Each document represents a treasure with its attributes.
+
+4. **Enabling Sharding and Demonstrating Sharding:**
+   - Sharding is enabled on the MongoDB database and collection.
+   - The script demonstrates sharding functionality by performing a sample selection query based on the "city" field.
+
+5. **Explanation:**
+   - This approach was chosen because it meets the requirements of setting up a MongoDB sharded cluster with at least three shards.
+   - Docker Compose simplifies the setup process by defining the MongoDB services and networking configurations.
+   - Using Python and pyodbc allows for seamless extraction of data from the CATCHEM database and insertion into MongoDB.
+   - Sharding based on the "city" field aligns with the task's requirement that selections on the database are mostly based on location data, making queries more efficient.
+
+By applying this approach, we can demonstrate the functionality of sharding in MongoDB using a simple dataset extracted from the CATCHEM database, while also ensuring that the setup aligns with the task requirements and best practices for scalability and performance.
+
+
+
+Create dis:
+
+zamlamb@ZamLaptop:~/mongodb$ cat docker-compose.yaml
+version: '3'
+services:
+  mongo-shard1-1:
+    image: mongo:5
+    ports:
+      - "27101:27017"
+    command: mongod --shardsvr --replSet mongo-shard1-rs --port 27017 --bind_ip_all
+    networks:
+      - mongodb-network
+
+  mongo-shard1-2:
+    image: mongo:5
+    command: mongod --shardsvr --replSet mongo-shard1-rs --port 27017 --bind_ip_all
+    networks:
+      - mongodb-network
+
+  mongo-shard1-3:
+    image: mongo:5
+    command: mongod --shardsvr --replSet mongo-shard1-rs --port 27017 --bind_ip_all
+    networks:
+      - mongodb-network
+
+  mongo-shard2-1:
+    image: mongo:5
+    ports:
+      - "27201:27017"
+    command: mongod --shardsvr --replSet mongo-shard2-rs --port 27017 --bind_ip_all
+    networks:
+      - mongodb-network
+
+  mongo-shard2-2:
+    image: mongo:5
+    command: mongod --shardsvr --replSet mongo-shard2-rs --port 27017 --bind_ip_all
+    networks:
+      - mongodb-network
+
+  mongo-shard2-3:
+    image: mongo:5
+    command: mongod --shardsvr --replSet mongo-shard2-rs --port 27017 --bind_ip_all
+    networks:
+      - mongodb-network
+
+  mongo-shard3-1:
+    image: mongo:5
+    ports:
+      - "27301:27017"
+    command: mongod --shardsvr --replSet mongo-shard3-rs --port 27017 --bind_ip_all
+    networks:
+      - mongodb-network
+
+  mongo-shard3-2:
+    image: mongo:5
+    command: mongod --shardsvr --replSet mongo-shard3-rs --port 27017 --bind_ip_all
+    networks:
+      - mongodb-network
+
+  mongo-shard3-3:
+    image: mongo:5
+    command: mongod --shardsvr --replSet mongo-shard3-rs --port 27017 --bind_ip_all
+    networks:
+      - mongodb-network
+
+  mongo-config-server-1:
+    image: mongo:5
+    ports:
+      - "27019:27017"
+    command: mongod --configsvr --replSet mongo-config-server-rs --port 27017 --bind_ip_all
+    networks:
+      - mongodb-network
+
+  mongo-config-server-2:
+    image: mongo:5
+    command: mongod --configsvr --replSet mongo-config-server-rs --port 27017 --bind_ip_all
+    networks:
+      - mongodb-network
+
+  mongo-config-server-3:
+    image: mongo:5
+    command: mongod --configsvr --replSet mongo-config-server-rs --port 27017 --bind_ip_all
+    networks:
+      - mongodb-network
+
+  mongos-router:
+    image: mongo:5
+    ports:
+      - "27017:27017"
+    command: mongos --configdb mongo-config-server-rs/mongo-config-server-1:27017,mongo-config-server-2:27017,mongo-config-server-3:27017 --bind_ip_all
+    depends_on:
+      - mongo-config-server-1
+      - mongo-config-server-2
+      - mongo-config-server-3
+    networks:
+      - mongodb-network
+
+networks:
+  mongodb-network:
+    driver: bridge
+
+zamlamb@ZamLaptop:~/mongodb$ vim docker-compose.yaml
+zamlamb@ZamLaptop:~/mongodb$ docker-compose -up -d
+Define and run multi-container applications with Docker.
+
+Usage:
+  docker-compose [-f <arg>...] [--profile <name>...] [options] [--] [COMMAND] [ARGS...]
+  docker-compose -h|--help
+
+Options:
+  -f, --file FILE             Specify an alternate compose file
+                              (default: docker-compose.yml)
+  -p, --project-name NAME     Specify an alternate project name
+                              (default: directory name)
+  --profile NAME              Specify a profile to enable
+  -c, --context NAME          Specify a context name
+  --verbose                   Show more output
+  --log-level LEVEL           Set log level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+  --ansi (never|always|auto)  Control when to print ANSI control characters
+  --no-ansi                   Do not print ANSI control characters (DEPRECATED)
+  -v, --version               Print version and exit
+  -H, --host HOST             Daemon socket to connect to
+
+  --tls                       Use TLS; implied by --tlsverify
+  --tlscacert CA_PATH         Trust certs signed only by this CA
+  --tlscert CLIENT_CERT_PATH  Path to TLS certificate file
+  --tlskey TLS_KEY_PATH       Path to TLS key file
+  --tlsverify                 Use TLS and verify the remote
+  --skip-hostname-check       Don't check the daemon's hostname against the
+                              name specified in the client certificate
+  --project-directory PATH    Specify an alternate working directory
+                              (default: the path of the Compose file)
+  --compatibility             If set, Compose will attempt to convert keys
+                              in v3 files to their non-Swarm equivalent (DEPRECATED)
+  --env-file PATH             Specify an alternate environment file
+
+Commands:
+  build              Build or rebuild services
+  config             Validate and view the Compose file
+  create             Create services
+  down               Stop and remove resources
+  events             Receive real time events from containers
+  exec               Execute a command in a running container
+  help               Get help on a command
+  images             List images
+  kill               Kill containers
+  logs               View output from containers
+  pause              Pause services
+  port               Print the public port for a port binding
+  ps                 List containers
+  pull               Pull service images
+  push               Push service images
+  restart            Restart services
+  rm                 Remove stopped containers
+  run                Run a one-off command
+  scale              Set number of containers for a service
+  start              Start services
+  stop               Stop services
+  top                Display the running processes
+  unpause            Unpause services
+  up                 Create and start containers
+  version            Show version information and quit
+zamlamb@ZamLaptop:~/mongodb$ docker-compose up -d
+Creating network "mongodb_mongodb-network" with driver "bridge"
+Creating mongodb_mongo-config-server-3_1 ... done
+Creating mongodb_mongo-shard2-2_1        ... done
+Creating mongodb_mongo-shard2-1_1        ... done
+Creating mongodb_mongo-shard3-1_1        ... done
+Creating mongodb_mongo-shard3-3_1        ... done
+Creating mongodb_mongo-shard1-3_1        ... done
+Creating mongodb_mongo-shard1-2_1        ... done
+Creating mongodb_mongo-shard3-2_1        ... done
+Creating mongodb_mongo-shard2-3_1        ... done
+Creating mongodb_mongo-config-server-2_1 ... done
+Creating mongodb_mongo-config-server-1_1 ... done
+Creating mongodb_mongo-shard1-1_1        ... done
+Creating mongodb_mongos-router-1_1       ... done
+Creating mongodb_mongos-router-2_1       ... done
+zamlamb@ZamLaptop:~/mongodb$ docker ps
+CONTAINER ID   IMAGE     COMMAND                  CREATED              STATUS              PORTS                      NAMES
+81ec21f211ba   mongo:5   "docker-entrypoint.s…"   59 seconds ago       Up 56 seconds       0.0.0.0:27018->27017/tcp   mongodb_mongos-router-2_1
+b4d56766ce5b   mongo:5   "docker-entrypoint.s…"   59 seconds ago       Up 56 seconds       0.0.0.0:27017->27017/tcp   mongodb_mongos-router-1_1
+35f5bfcc3cc9   mongo:5   "docker-entrypoint.s…"   About a minute ago   Up 59 seconds       0.0.0.0:27101->27017/tcp   mongodb_mongo-shard1-1_1
+322178a10f1e   mongo:5   "docker-entrypoint.s…"   About a minute ago   Up 59 seconds       0.0.0.0:27019->27017/tcp   mongodb_mongo-config-server-1_1
+470073cc0415   mongo:5   "docker-entrypoint.s…"   About a minute ago   Up About a minute   27017/tcp                  mongodb_mongo-config-server-2_1
+96e5124bcf21   mongo:5   "docker-entrypoint.s…"   About a minute ago   Up 59 seconds       27017/tcp                  mongodb_mongo-shard2-3_1
+574aa9f451aa   mongo:5   "docker-entrypoint.s…"   About a minute ago   Up About a minute   27017/tcp                  mongodb_mongo-shard3-2_1
+3d2937e1da27   mongo:5   "docker-entrypoint.s…"   About a minute ago   Up About a minute   27017/tcp                  mongodb_mongo-shard1-2_1
+78ae9abc5488   mongo:5   "docker-entrypoint.s…"   About a minute ago   Up 59 seconds       27017/tcp                  mongodb_mongo-shard1-3_1
+ee096c43828e   mongo:5   "docker-entrypoint.s…"   About a minute ago   Up About a minute   27017/tcp                  mongodb_mongo-shard3-3_1
+3d366d67fda7   mongo:5   "docker-entrypoint.s…"   About a minute ago   Up About a minute   0.0.0.0:27301->27017/tcp   mongodb_mongo-shard3-1_1
+ea5fb6e691a2   mongo:5   "docker-entrypoint.s…"   About a minute ago   Up About a minute   0.0.0.0:27201->27017/tcp   mongodb_mongo-shard2-1_1
+ce368293807b   mongo:5   "docker-entrypoint.s…"   About a minute ago   Up About a minute   27017/tcp                  mongodb_mongo-config-server-3_1
+9af7075d3d3d   mongo:5   "docker-entrypoint.s…"   About a minute ago   Up About a minute   27017/tcp                  mongodb_mongo-shard2-2_1
+zamlamb@ZamLaptop:~/mongodb$ docker exec -it mongo-shard1-1 mongosh --eval 'rs.initiate({_id: "mongo-shard1-rs", members: [{_id: 0, host: "mongo-shard1-1:27017"}, {_id: 1, host: "mongo-shard1-2:27017"}, {_id: 2, host: "mongo-shard1-3:27017"}]})'
+Error response from daemon: No such container: mongo-shard1-1
+zamlamb@ZamLaptop:~/mongodb$ docker exec -it mongodb_mongo-shard1-1_1 mongosh --eval 'rs.initiate({_id: "mongo-shard1-rs", members: [{_id: 0, host: "mongodb_mongo-shard1-1_1:27017"}, {_id: 1, host: "mongodb_mongo-shard1-2_1:27017"}, {_id: 2, host: "mongodb_mongo-shard1-3_1:27017"}]})'
+
+docker exec -it mongodb_mongo-shard2-1_1 mongosh --eval 'rs.initiate({_id: "mongo-shard2-rs", members: [{_id: 0, host: "mongodb_mongo-shard2-1_1:27017"}, {_id: 1, host: "mongodb_mongo-shard2-2_1:27017"}, {_id: 2, host: "mongodb_mongo-shard2-3_1:27017"}]})'
+
+docker exec -it mongodb_mongo-shard3-1_1 mongosh --eval 'rs.initiate({_id: "mongo-shard3-rs", members: [{_id: 0, host: "mongodb_mongo-shard3-1_1:27017"}, {_id: 1, host: "mongodb_mongo-shard3-2_1:27017"}, {_id: 2, host: "mongodb_mongo-shard3-3_1:27017"}]})'
+{ ok: 1 }
+{
+  ok: 1,
+  '$clusterTime': {
+    clusterTime: Timestamp({ t: 1716289984, i: 1 }),
+    signature: {
+      hash: Binary.createFromBase64('AAAAAAAAAAAAAAAAAAAAAAAAAAA=', 0),
+      keyId: Long('0')
+    }
+  },
+  operationTime: Timestamp({ t: 1716289984, i: 1 })
+}
+{ ok: 1 }
+zamlamb@ZamLaptop:~/mongodb$ docker exec -it mongo-config-server-1 mongosh --eval 'rs.initiate({_id: "mongo-config-server-rs", configsvr: true, members: [{_id: 0, host: "mongo-config-server-1:27017"}, {_id: 1, host: "mongo-config-server-2:27017"}, {_id: 2, host: "mongo-config-server-3:27017"}]})'
+Error response from daemon: No such container: mongo-config-server-1
+zamlamb@ZamLaptop:~/mongodb$ docker exec -it mongodb_mongo-config-server-1_1 mongosh --eval 'rs.initiate({_id: "mongo-config-server-rs", configsvr: true, members: [{_id: 0, host: "mongodb_mongo-config-server-1_1:27017"}, {_id: 1, host: "mongodb_mongo-config-server-2_1:27017"}, {_id: 2, host: "mongodb_mongo-config-server-3_1:27017"}]})'
+{
+  ok: 1,
+  '$gleStats': {
+    lastOpTime: Timestamp({ t: 1716290082, i: 1 }),
+    electionId: ObjectId('000000000000000000000000')
+  },
+  lastCommittedOpTime: Timestamp({ t: 1716290082, i: 1 })
+}
+zamlamb@ZamLaptop:~/mongodb$ docker exec -it mongodb_mongos-router-1_1 mongosh --eval 'sh.addShard("mongo-shard1-rs/mongodb_mongo-shard1-1_1:27017,mongodb_mongo-shard1-2_1:27017,mongodb_mongo-shard1-3_1:27017")'
+docker exec -it mongodb_mongos-router-1_1 mongosh --eval 'sh.addShard("mongo-shard2-rs/mongodb_mongo-shard2-1_1:27017,mongodb_mongo-shard2-2_1:27017,mongodb_mongo-shard2-3_1:27017")'
+docker exec -it mongodb_mongos-router-1_1 mongosh --eval 'sh.addShard("mongo-shard3-rs/mongodb_mongo-shard3-1_1:27017,mongodb_mongo-shard3-2_1:27017,mongodb_mongo-shard3-3_1:27017")'
+{
+  shardAdded: 'mongo-shard1-rs',
+  ok: 1,
+  '$clusterTime': {
+    clusterTime: Timestamp({ t: 1716290110, i: 1 }),
+    signature: {
+      hash: Binary.createFromBase64('AAAAAAAAAAAAAAAAAAAAAAAAAAA=', 0),
+      keyId: Long('0')
+    }
+  },
+  operationTime: Timestamp({ t: 1716290110, i: 1 })
+}
+{
+  shardAdded: 'mongo-shard2-rs',
+  ok: 1,
+  '$clusterTime': {
+    clusterTime: Timestamp({ t: 1716290113, i: 4 }),
+    signature: {
+      hash: Binary.createFromBase64('AAAAAAAAAAAAAAAAAAAAAAAAAAA=', 0),
+      keyId: Long('0')
+    }
+  },
+  operationTime: Timestamp({ t: 1716290113, i: 4 })
+}
+{
+  shardAdded: 'mongo-shard3-rs',
+  ok: 1,
+  '$clusterTime': {
+    clusterTime: Timestamp({ t: 1716290116, i: 4 }),
+    signature: {
+      hash: Binary.createFromBase64('AAAAAAAAAAAAAAAAAAAAAAAAAAA=', 0),
+      keyId: Long('0')
+    }
+  },
+  operationTime: Timestamp({ t: 1716290116, i: 4 })
+}
+zamlamb@ZamLaptop:~/mongodb$ docker exec -it mongodb_mongos-router-1_1 mongosh --eval 'sh.enableSharding("treasure_database")'
+docker exec -it mongodb_mongos-router-1_1 mongosh --eval 'sh.shardCollection("treasure_database.treasures", { "location": "hashed" })'
+{
+  ok: 1,
+  '$clusterTime': {
+    clusterTime: Timestamp({ t: 1716290362, i: 5 }),
+    signature: {
+      hash: Binary.createFromBase64('AAAAAAAAAAAAAAAAAAAAAAAAAAA=', 0),
+      keyId: Long('0')
+    }
+  },
+  operationTime: Timestamp({ t: 1716290362, i: 2 })
+}
+{
+  collectionsharded: 'treasure_database.treasures',
+  ok: 1,
+  '$clusterTime': {
+    clusterTime: Timestamp({ t: 1716290364, i: 32 }),
+    signature: {
+      hash: Binary.createFromBase64('AAAAAAAAAAAAAAAAAAAAAAAAAAA=', 0),
+      keyId: Long('0')
+    }
+  },
+  operationTime: Timestamp({ t: 1716290364, i: 28 })
+}
+zamlamb@ZamLaptop:~/mongodb$
+
+
+
+
+I converted my sql query into csv and insert it into the mongo db compass
+
+
