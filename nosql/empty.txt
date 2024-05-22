@@ -322,4 +322,5 @@ zamlamb@ZamLaptop:~/mongodb$
 
 I converted my sql query into csv and insert it into the mongo db compass
 
+which shows the data in the form of a parent and child relationship
 
