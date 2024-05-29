@@ -1146,3 +1146,144 @@ we can even do a search to check for the data based on the visibility being 1:
   }
 ]
 [direct: mongos] treasure_database>
+
+
+To shard the collection by the `city_name` field in alphabetical order, you'll need to use a range-based shard key rather than a hashed one. Here's how you can do it:
+
+1. **Connect to the `mongos` instance running inside the Docker container:**
+   Use the `docker exec` command to run `mongosh` within the `mongos` container.
+
+2. **Enable sharding on the database (if not already enabled):**
+   Ensure that sharding is enabled on the `treasure_database`.
+
+3. **Create an index on the `city_name` field:**
+   Ensure that the `city_name` field has an index created in the `treasures` collection.
+
+4. **Shard the collection using the `city_name` field as the shard key:**
+   Use a range-based shard key for `city_name`.
+
+Here's the complete sequence of commands:
+
+1. **Connect to the `mongos` instance:**
+
+```shell
+docker exec -it mongodb_mongos-router-1_1 mongosh
+```
+
+2. **Enable sharding on the database:**
+
+```javascript
+sh.enableSharding("treasure_database")
+```
+
+3. **Create an index on the `city_name` field:**
+
+```javascript
+use treasure_database
+db.treasures.createIndex({ "city_name": 1 })
+```
+
+4. **Shard the collection using the `city_name` field as the shard key:**
+
+```javascript
+sh.shardCollection("treasure_database.treasures", { "city_name": 1 })
+```
+
+Alternatively, if you prefer to run the command directly with `docker exec` and `mongosh --eval`, here's how you can do it step by step:
+
+1. **Enable sharding on the database:**
+
+```shell
+docker exec -it mongodb_mongos-router-1_1 mongosh --eval 'sh.enableSharding("treasure_database")'
+```
+
+2. **Create an index on the `city_name` field:**
+
+```shell
+docker exec -it mongodb_mongos-router-1_1 mongosh --eval 'use treasure_database; db.treasures.createIndex({ "city_name": 1 })'
+```
+
+3. **Shard the collection using the `city_name` field as the shard key:**
+
+```shell
+docker exec -it mongodb_mongos-router-1_1 mongosh --eval 'sh.shardCollection("treasure_database.treasures", { "city_name": 1 })'
+```
+
+This approach ensures that the `city_name` field is used as a range-based shard key, allowing the data to be sharded in alphabetical order.
+
+
+test> use treasure_database
+switched to db treasure_database
+treasure_database> db.treasures.find({ "city_name": /Dörtağaç/i }).pretty()
+[
+  {
+    _id: ObjectId('664c8e923b7e332b2fa209de'),
+    '#': 4,
+    treasure_id: UUID('d15e24c4-db3e-45a4-b001-48548dbe0324'),
+    difficulty: 1,
+    terrain: 4,
+    city_name: 'Dörtağaç',
+    country_name: 'Turkey',
+    country_code: 'TUR',
+    container_size: 0,
+    stage_description: 'Necessitatibus a ipsum totam est.',
+    stage_latitude: 38.45152889714736,
+    stage_longitude: 42.1584209983017,
+    sequence_number: 2,
+    stage_type: 0,
+    visibility: 1
+  },
+  {
+    _id: ObjectId('664c8e933b7e332b2fa21a36'),
+    '#': 4188,
+    treasure_id: UUID('d15e24c4-db3e-45a4-b001-48548dbe0324'),
+    difficulty: 1,
+    terrain: 4,
+    city_name: 'Dörtağaç',
+    country_name: 'Turkey',
+    country_code: 'TUR',
+    container_size: 0,
+    stage_description: 'Dolores veritatis rerum at maxime tenetur.',
+    stage_latitude: 38.446185355519056,
+    stage_longitude: 42.16195164280413,
+    sequence_number: 0,
+    stage_type: 0,
+    visibility: 0
+  },
+  {
+    _id: ObjectId('664c8e953b7e332b2fa2912b'),
+    '#': 34641,
+    treasure_id: UUID('d15e24c4-db3e-45a4-b001-48548dbe0324'),
+    difficulty: 1,
+    terrain: 4,
+    city_name: 'Dörtağaç',
+    country_name: 'Turkey',
+    country_code: 'TUR',
+    container_size: 3,
+    stage_description: 'Corporis id quos.',
+    stage_latitude: 38.446255602924126,
+    stage_longitude: 42.16170521034321,
+    sequence_number: 1,
+    stage_type: 0,
+    visibility: 0
+  },
+  {
+    _id: ObjectId('664c8e953b7e332b2fa295b1'),
+    '#': 35799,
+    treasure_id: UUID('d15e24c4-db3e-45a4-b001-48548dbe0324'),
+    difficulty: 1,
+    terrain: 4,
+    city_name: 'Dörtağaç',
+    country_name: 'Turkey',
+    country_code: 'TUR',
+    container_size: 0,
+    stage_description: 'Nihil consequatur recusandae.',
+    stage_latitude: 38.454396539541904,
+    stage_longitude: 42.15389879750495,
+    sequence_number: 3,
+    stage_type: 0,
+    visibility: 2
+  }
+]
+treasure_database>
+

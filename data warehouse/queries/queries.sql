@@ -124,7 +124,7 @@ ORDER BY
 -- with variations observed across different days, higher counts on weekdays, fluctuations across months, particularly in September, and increased activity during the Autumn season.
 
 
---() TODO:[S2] How does the type of user affect the duration of the treasure hunt? Does a beginner take longer?
+--() TODO:[S2] How does the type of user affect the duration of the treasure hunt? Does a starter take longer?
 SELECT
     u.experience_level,
     AVG(f.Duration) AS average_duration
