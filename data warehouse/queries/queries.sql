@@ -176,7 +176,7 @@ GROUP BY
 
 -- additional questions:
 
---(Manami) Does leaderboard or rankings differ for different countries and cities?
+--(Manami) Does the number of catches for different countries and cities?
 SELECT
     u.address AS Location,
     COUNT(*) AS FoundCount
