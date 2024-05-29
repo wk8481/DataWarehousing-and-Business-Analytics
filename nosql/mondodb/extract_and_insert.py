@@ -40,54 +40,14 @@ treasures_data = cursor.fetchall()
 # Close the connection to the CATCHEM database
 conn.close()
 
-# Connect to MongoDB
-mongo_client1 = MongoClient("mongodb://172.21.0.3:27017/")
-mongo_client2 = MongoClient("mongodb://172.21.0.4:27017/")
-mongo_client3 = MongoClient("mongodb://172.21.0.2:27017/")
-db1 = mongo_client1["mydatabase"]
-db2 = mongo_client2["mydatabase"]
-db3 = mongo_client3["mydatabase"]
-treasures_collection1 = db1["treasures"]
-treasures_collection2 = db2["treasures"]
-treasures_collection3 = db3["treasures"]
+# Connect to MongoDB through the mongos router
+mongo_client = MongoClient("mongodb://localhost:27017")
+db = mongo_client["treasure_database"]
+treasures_collection = db["treasures"]
 
-# Insert data into MongoDB nodes
+# Insert data into the MongoDB collection
 for treasure in treasures_data:
-    treasures_collection1.insert_one({
-        "treasure_id": treasure[0],
-        "difficulty": treasure[1],
-        "terrain": treasure[2],
-        "city_name": treasure[3],
-        "country_name": treasure[4],
-        "country_code": treasure[5],
-        "stage": {
-            "container_size": treasure[6],
-            "description": treasure[7],
-            "latitude": treasure[8],
-            "longitude": treasure[9],
-            "sequence_number": treasure[10],
-            "type": treasure[11],
-            "visibility": treasure[12]
-        }
-    })
-    treasures_collection2.insert_one({
-        "treasure_id": treasure[0],
-        "difficulty": treasure[1],
-        "terrain": treasure[2],
-        "city_name": treasure[3],
-        "country_name": treasure[4],
-        "country_code": treasure[5],
-        "stage": {
-            "container_size": treasure[6],
-            "description": treasure[7],
-            "latitude": treasure[8],
-            "longitude": treasure[9],
-            "sequence_number": treasure[10],
-            "type": treasure[11],
-            "visibility": treasure[12]
-        }
-    })
-    treasures_collection3.insert_one({
+    treasures_collection.insert_one({
         "treasure_id": treasure[0],
         "difficulty": treasure[1],
         "terrain": treasure[2],
@@ -105,19 +65,10 @@ for treasure in treasures_data:
         }
     })
 
-# Connect to the admin database to enable sharding
-admin_db1 = mongo_client1.admin
-admin_db2 = mongo_client2.admin
-admin_db3 = mongo_client3.admin
-
-# Enable sharding and shard the collection on each node
-admin_db1.command("enableSharding", "mydatabase")
-admin_db2.command("enableSharding", "mydatabase")
-admin_db3.command("enableSharding", "mydatabase")
-
-admin_db1.command("shardCollection", "mydatabase.treasures", key={"city_name": 1})
-admin_db2.command("shardCollection", "mydatabase.treasures", key={"city_name": 1})
-admin_db3.command("shardCollection", "mydatabase.treasures", key={"city_name": 1})
+# Enable sharding on the database and shard the collection
+admin_db = mongo_client.admin
+admin_db.command("enableSharding", "treasure_database")
+admin_db.command("shardCollection", "treasure_database.treasures", key={"city_name": 1})
 
 # Print confirmation message
 print("Sharding enabled and collection sharded successfully.")

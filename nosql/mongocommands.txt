@@ -1,0 +1,1148 @@
+
+
+The provided solution aims to address the requirements outlined in the task:
+
+1. **Setting up MongoDB with Sharding:**
+   - The Docker Compose configuration defines three MongoDB services, each running in its own container. This setup simulates a MongoDB sharded cluster with three shards, as requested.
+   - Sharding is enabled on the MongoDB database (`mydatabase`) and the collection (`treasures`) based on the "city" field, as specified in the task.
+
+2. **Extracting Data from the CATCHEM Database:**
+   - The Python script connects to the CATCHEM database using the provided configuration (`config.py`) and retrieves data related to treasures, including their corresponding stage, city, country, and coordinates.
+
+3. **Inserting Data into MongoDB:**
+   - The extracted data is inserted into MongoDB. Each document represents a treasure with its attributes.
+
+4. **Enabling Sharding and Demonstrating Sharding:**
+   - Sharding is enabled on the MongoDB database and collection.
+   - The script demonstrates sharding functionality by performing a sample selection query based on the "city" field.
+
+5. **Explanation:**
+   - This approach was chosen because it meets the requirements of setting up a MongoDB sharded cluster with at least three shards.
+   - Docker Compose simplifies the setup process by defining the MongoDB services and networking configurations.
+   - Using Python and pyodbc allows for seamless extraction of data from the CATCHEM database and insertion into MongoDB.
+   - Sharding based on the "city" field aligns with the task's requirement that selections on the database are mostly based on location data, making queries more efficient.
+
+By applying this approach, we can demonstrate the functionality of sharding in MongoDB using a simple dataset extracted from the CATCHEM database, while also ensuring that the setup aligns with the task requirements and best practices for scalability and performance.
+
+
+
+Create dis:
+
+zamlamb@ZamLaptop:~/mongodb$ cat docker-compose.yaml
+version: '3'
+services:
+  mongo-shard1-1:
+    image: mongo:5
+    ports:
+      - "27101:27017"
+    command: mongod --shardsvr --replSet mongo-shard1-rs --port 27017 --bind_ip_all
+    networks:
+      - mongodb-network
+
+  mongo-shard1-2:
+    image: mongo:5
+    command: mongod --shardsvr --replSet mongo-shard1-rs --port 27017 --bind_ip_all
+    networks:
+      - mongodb-network
+
+  mongo-shard1-3:
+    image: mongo:5
+    command: mongod --shardsvr --replSet mongo-shard1-rs --port 27017 --bind_ip_all
+    networks:
+      - mongodb-network
+
+  mongo-shard2-1:
+    image: mongo:5
+    ports:
+      - "27201:27017"
+    command: mongod --shardsvr --replSet mongo-shard2-rs --port 27017 --bind_ip_all
+    networks:
+      - mongodb-network
+
+  mongo-shard2-2:
+    image: mongo:5
+    command: mongod --shardsvr --replSet mongo-shard2-rs --port 27017 --bind_ip_all
+    networks:
+      - mongodb-network
+
+  mongo-shard2-3:
+    image: mongo:5
+    command: mongod --shardsvr --replSet mongo-shard2-rs --port 27017 --bind_ip_all
+    networks:
+      - mongodb-network
+
+  mongo-shard3-1:
+    image: mongo:5
+    ports:
+      - "27301:27017"
+    command: mongod --shardsvr --replSet mongo-shard3-rs --port 27017 --bind_ip_all
+    networks:
+      - mongodb-network
+
+  mongo-shard3-2:
+    image: mongo:5
+    command: mongod --shardsvr --replSet mongo-shard3-rs --port 27017 --bind_ip_all
+    networks:
+      - mongodb-network
+
+  mongo-shard3-3:
+    image: mongo:5
+    command: mongod --shardsvr --replSet mongo-shard3-rs --port 27017 --bind_ip_all
+    networks:
+      - mongodb-network
+
+  mongo-config-server-1:
+    image: mongo:5
+    ports:
+      - "27019:27017"
+    command: mongod --configsvr --replSet mongo-config-server-rs --port 27017 --bind_ip_all
+    networks:
+      - mongodb-network
+
+  mongo-config-server-2:
+    image: mongo:5
+    command: mongod --configsvr --replSet mongo-config-server-rs --port 27017 --bind_ip_all
+    networks:
+      - mongodb-network
+
+  mongo-config-server-3:
+    image: mongo:5
+    command: mongod --configsvr --replSet mongo-config-server-rs --port 27017 --bind_ip_all
+    networks:
+      - mongodb-network
+
+  mongos-router:
+    image: mongo:5
+    ports:
+      - "27017:27017"
+    command: mongos --configdb mongo-config-server-rs/mongo-config-server-1:27017,mongo-config-server-2:27017,mongo-config-server-3:27017 --bind_ip_all
+    depends_on:
+      - mongo-config-server-1
+      - mongo-config-server-2
+      - mongo-config-server-3
+    networks:
+      - mongodb-network
+
+networks:
+  mongodb-network:
+    driver: bridge
+
+zamlamb@ZamLaptop:~/mongodb$ vim docker-compose.yaml
+zamlamb@ZamLaptop:~/mongodb$ docker-compose -up -d
+Define and run multi-container applications with Docker.
+
+Usage:
+  docker-compose [-f <arg>...] [--profile <name>...] [options] [--] [COMMAND] [ARGS...]
+  docker-compose -h|--help
+
+Options:
+  -f, --file FILE             Specify an alternate compose file
+                              (default: docker-compose.yml)
+  -p, --project-name NAME     Specify an alternate project name
+                              (default: directory name)
+  --profile NAME              Specify a profile to enable
+  -c, --context NAME          Specify a context name
+  --verbose                   Show more output
+  --log-level LEVEL           Set log level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+  --ansi (never|always|auto)  Control when to print ANSI control characters
+  --no-ansi                   Do not print ANSI control characters (DEPRECATED)
+  -v, --version               Print version and exit
+  -H, --host HOST             Daemon socket to connect to
+
+  --tls                       Use TLS; implied by --tlsverify
+  --tlscacert CA_PATH         Trust certs signed only by this CA
+  --tlscert CLIENT_CERT_PATH  Path to TLS certificate file
+  --tlskey TLS_KEY_PATH       Path to TLS key file
+  --tlsverify                 Use TLS and verify the remote
+  --skip-hostname-check       Don't check the daemon's hostname against the
+                              name specified in the client certificate
+  --project-directory PATH    Specify an alternate working directory
+                              (default: the path of the Compose file)
+  --compatibility             If set, Compose will attempt to convert keys
+                              in v3 files to their non-Swarm equivalent (DEPRECATED)
+  --env-file PATH             Specify an alternate environment file
+
+Commands:
+  build              Build or rebuild services
+  config             Validate and view the Compose file
+  create             Create services
+  down               Stop and remove resources
+  events             Receive real time events from containers
+  exec               Execute a command in a running container
+  help               Get help on a command
+  images             List images
+  kill               Kill containers
+  logs               View output from containers
+  pause              Pause services
+  port               Print the public port for a port binding
+  ps                 List containers
+  pull               Pull service images
+  push               Push service images
+  restart            Restart services
+  rm                 Remove stopped containers
+  run                Run a one-off command
+  scale              Set number of containers for a service
+  start              Start services
+  stop               Stop services
+  top                Display the running processes
+  unpause            Unpause services
+  up                 Create and start containers
+  version            Show version information and quit
+zamlamb@ZamLaptop:~/mongodb$ docker-compose up -d
+Creating network "mongodb_mongodb-network" with driver "bridge"
+Creating mongodb_mongo-config-server-3_1 ... done
+Creating mongodb_mongo-shard2-2_1        ... done
+Creating mongodb_mongo-shard2-1_1        ... done
+Creating mongodb_mongo-shard3-1_1        ... done
+Creating mongodb_mongo-shard3-3_1        ... done
+Creating mongodb_mongo-shard1-3_1        ... done
+Creating mongodb_mongo-shard1-2_1        ... done
+Creating mongodb_mongo-shard3-2_1        ... done
+Creating mongodb_mongo-shard2-3_1        ... done
+Creating mongodb_mongo-config-server-2_1 ... done
+Creating mongodb_mongo-config-server-1_1 ... done
+Creating mongodb_mongo-shard1-1_1        ... done
+Creating mongodb_mongos-router-1_1       ... done
+Creating mongodb_mongos-router-2_1       ... done
+zamlamb@ZamLaptop:~/mongodb$ docker ps
+CONTAINER ID   IMAGE     COMMAND                  CREATED              STATUS              PORTS                      NAMES
+81ec21f211ba   mongo:5   "docker-entrypoint.s…"   59 seconds ago       Up 56 seconds       0.0.0.0:27018->27017/tcp   mongodb_mongos-router-2_1
+b4d56766ce5b   mongo:5   "docker-entrypoint.s…"   59 seconds ago       Up 56 seconds       0.0.0.0:27017->27017/tcp   mongodb_mongos-router-1_1
+35f5bfcc3cc9   mongo:5   "docker-entrypoint.s…"   About a minute ago   Up 59 seconds       0.0.0.0:27101->27017/tcp   mongodb_mongo-shard1-1_1
+322178a10f1e   mongo:5   "docker-entrypoint.s…"   About a minute ago   Up 59 seconds       0.0.0.0:27019->27017/tcp   mongodb_mongo-config-server-1_1
+470073cc0415   mongo:5   "docker-entrypoint.s…"   About a minute ago   Up About a minute   27017/tcp                  mongodb_mongo-config-server-2_1
+96e5124bcf21   mongo:5   "docker-entrypoint.s…"   About a minute ago   Up 59 seconds       27017/tcp                  mongodb_mongo-shard2-3_1
+574aa9f451aa   mongo:5   "docker-entrypoint.s…"   About a minute ago   Up About a minute   27017/tcp                  mongodb_mongo-shard3-2_1
+3d2937e1da27   mongo:5   "docker-entrypoint.s…"   About a minute ago   Up About a minute   27017/tcp                  mongodb_mongo-shard1-2_1
+78ae9abc5488   mongo:5   "docker-entrypoint.s…"   About a minute ago   Up 59 seconds       27017/tcp                  mongodb_mongo-shard1-3_1
+ee096c43828e   mongo:5   "docker-entrypoint.s…"   About a minute ago   Up About a minute   27017/tcp                  mongodb_mongo-shard3-3_1
+3d366d67fda7   mongo:5   "docker-entrypoint.s…"   About a minute ago   Up About a minute   0.0.0.0:27301->27017/tcp   mongodb_mongo-shard3-1_1
+ea5fb6e691a2   mongo:5   "docker-entrypoint.s…"   About a minute ago   Up About a minute   0.0.0.0:27201->27017/tcp   mongodb_mongo-shard2-1_1
+ce368293807b   mongo:5   "docker-entrypoint.s…"   About a minute ago   Up About a minute   27017/tcp                  mongodb_mongo-config-server-3_1
+9af7075d3d3d   mongo:5   "docker-entrypoint.s…"   About a minute ago   Up About a minute   27017/tcp                  mongodb_mongo-shard2-2_1
+zamlamb@ZamLaptop:~/mongodb$ docker exec -it mongo-shard1-1 mongosh --eval 'rs.initiate({_id: "mongo-shard1-rs", members: [{_id: 0, host: "mongo-shard1-1:27017"}, {_id: 1, host: "mongo-shard1-2:27017"}, {_id: 2, host: "mongo-shard1-3:27017"}]})'
+Error response from daemon: No such container: mongo-shard1-1
+zamlamb@ZamLaptop:~/mongodb$ docker exec -it mongodb_mongo-shard1-1_1 mongosh --eval 'rs.initiate({_id: "mongo-shard1-rs", members: [{_id: 0, host: "mongodb_mongo-shard1-1_1:27017"}, {_id: 1, host: "mongodb_mongo-shard1-2_1:27017"}, {_id: 2, host: "mongodb_mongo-shard1-3_1:27017"}]})'
+
+docker exec -it mongodb_mongo-shard2-1_1 mongosh --eval 'rs.initiate({_id: "mongo-shard2-rs", members: [{_id: 0, host: "mongodb_mongo-shard2-1_1:27017"}, {_id: 1, host: "mongodb_mongo-shard2-2_1:27017"}, {_id: 2, host: "mongodb_mongo-shard2-3_1:27017"}]})'
+
+docker exec -it mongodb_mongo-shard3-1_1 mongosh --eval 'rs.initiate({_id: "mongo-shard3-rs", members: [{_id: 0, host: "mongodb_mongo-shard3-1_1:27017"}, {_id: 1, host: "mongodb_mongo-shard3-2_1:27017"}, {_id: 2, host: "mongodb_mongo-shard3-3_1:27017"}]})'
+{ ok: 1 }
+{
+  ok: 1,
+  '$clusterTime': {
+    clusterTime: Timestamp({ t: 1716289984, i: 1 }),
+    signature: {
+      hash: Binary.createFromBase64('AAAAAAAAAAAAAAAAAAAAAAAAAAA=', 0),
+      keyId: Long('0')
+    }
+  },
+  operationTime: Timestamp({ t: 1716289984, i: 1 })
+}
+{ ok: 1 }
+zamlamb@ZamLaptop:~/mongodb$ docker exec -it mongo-config-server-1 mongosh --eval 'rs.initiate({_id: "mongo-config-server-rs", configsvr: true, members: [{_id: 0, host: "mongo-config-server-1:27017"}, {_id: 1, host: "mongo-config-server-2:27017"}, {_id: 2, host: "mongo-config-server-3:27017"}]})'
+Error response from daemon: No such container: mongo-config-server-1
+zamlamb@ZamLaptop:~/mongodb$ docker exec -it mongodb_mongo-config-server-1_1 mongosh --eval 'rs.initiate({_id: "mongo-config-server-rs", configsvr: true, members: [{_id: 0, host: "mongodb_mongo-config-server-1_1:27017"}, {_id: 1, host: "mongodb_mongo-config-server-2_1:27017"}, {_id: 2, host: "mongodb_mongo-config-server-3_1:27017"}]})'
+{
+  ok: 1,
+  '$gleStats': {
+    lastOpTime: Timestamp({ t: 1716290082, i: 1 }),
+    electionId: ObjectId('000000000000000000000000')
+  },
+  lastCommittedOpTime: Timestamp({ t: 1716290082, i: 1 })
+}
+zamlamb@ZamLaptop:~/mongodb$ docker exec -it mongodb_mongos-router-1_1 mongosh --eval 'sh.addShard("mongo-shard1-rs/mongodb_mongo-shard1-1_1:27017,mongodb_mongo-shard1-2_1:27017,mongodb_mongo-shard1-3_1:27017")'
+docker exec -it mongodb_mongos-router-1_1 mongosh --eval 'sh.addShard("mongo-shard2-rs/mongodb_mongo-shard2-1_1:27017,mongodb_mongo-shard2-2_1:27017,mongodb_mongo-shard2-3_1:27017")'
+docker exec -it mongodb_mongos-router-1_1 mongosh --eval 'sh.addShard("mongo-shard3-rs/mongodb_mongo-shard3-1_1:27017,mongodb_mongo-shard3-2_1:27017,mongodb_mongo-shard3-3_1:27017")'
+{
+  shardAdded: 'mongo-shard1-rs',
+  ok: 1,
+  '$clusterTime': {
+    clusterTime: Timestamp({ t: 1716290110, i: 1 }),
+    signature: {
+      hash: Binary.createFromBase64('AAAAAAAAAAAAAAAAAAAAAAAAAAA=', 0),
+      keyId: Long('0')
+    }
+  },
+  operationTime: Timestamp({ t: 1716290110, i: 1 })
+}
+{
+  shardAdded: 'mongo-shard2-rs',
+  ok: 1,
+  '$clusterTime': {
+    clusterTime: Timestamp({ t: 1716290113, i: 4 }),
+    signature: {
+      hash: Binary.createFromBase64('AAAAAAAAAAAAAAAAAAAAAAAAAAA=', 0),
+      keyId: Long('0')
+    }
+  },
+  operationTime: Timestamp({ t: 1716290113, i: 4 })
+}
+{
+  shardAdded: 'mongo-shard3-rs',
+  ok: 1,
+  '$clusterTime': {
+    clusterTime: Timestamp({ t: 1716290116, i: 4 }),
+    signature: {
+      hash: Binary.createFromBase64('AAAAAAAAAAAAAAAAAAAAAAAAAAA=', 0),
+      keyId: Long('0')
+    }
+  },
+  operationTime: Timestamp({ t: 1716290116, i: 4 })
+}
+zamlamb@ZamLaptop:~/mongodb$ docker exec -it mongodb_mongos-router-1_1 mongosh --eval 'sh.enableSharding("treasure_database")'
+docker exec -it mongodb_mongos-router-1_1 mongosh --eval 'sh.shardCollection("treasure_database.treasures", { "location": "hashed" })'
+{
+  ok: 1,
+  '$clusterTime': {
+    clusterTime: Timestamp({ t: 1716290362, i: 5 }),
+    signature: {
+      hash: Binary.createFromBase64('AAAAAAAAAAAAAAAAAAAAAAAAAAA=', 0),
+      keyId: Long('0')
+    }
+  },
+  operationTime: Timestamp({ t: 1716290362, i: 2 })
+}
+{
+  collectionsharded: 'treasure_database.treasures',
+  ok: 1,
+  '$clusterTime': {
+    clusterTime: Timestamp({ t: 1716290364, i: 32 }),
+    signature: {
+      hash: Binary.createFromBase64('AAAAAAAAAAAAAAAAAAAAAAAAAAA=', 0),
+      keyId: Long('0')
+    }
+  },
+  operationTime: Timestamp({ t: 1716290364, i: 28 })
+}
+zamlamb@ZamLaptop:~/mongodb$
+
+
+
+
+I converted my sql query into csv and insert it into the mongo db compass
+
+which shows the data in the form of a parent and child relationship:
+    SELECT
+        t.id AS treasure_id,
+        t.difficulty,
+        t.terrain,
+        c.city_name,
+        co.name AS country_name,
+        co.code3 AS country_code,
+        s.container_size,
+        s.description AS stage_description,
+        s.latitude AS stage_latitude,
+        s.longitude AS stage_longitude,
+        s.sequence_number,
+        s.type AS stage_type,
+        s.visibility
+    FROM
+        treasure AS t
+    INNER JOIN
+        city AS c ON t.city_city_id = c.city_id
+    INNER JOIN
+        country AS co ON c.country_code = co.code
+    INNER JOIN
+        treasure_stages AS ts ON t.id = ts.treasure_id
+    INNER JOIN
+        stage AS s ON ts.stages_id = s.id
+
+
+
+then start the mongosh and run the following commands
+
+ mongodb://localhost:27017
+
+ use treasure_database
+ to look for two random data based on the query we inserted:
+ [direct: mongos] treasure_database> db.treasures.aggregate([{ $sample: { size: 2 } }])
+ [
+   {
+     _id: ObjectId('664dbaf823dab71106e5a47d'),
+     treasure_id: Binary.createFromBase64('PHpmIZT8QqCn0VDaLS+frg==', 0),
+     difficulty: 0,
+     terrain: 2,
+     city_name: 'Khadki',
+     country_name: 'India',
+     country_code: 'IND',
+     stage: {
+       container_size: 0,
+       description: 'Earum rerum voluptatem.',
+       latitude: 18.569547122216996,
+       longitude: 73.83995819415925,
+       sequence_number: 5,
+       type: 0,
+       visibility: 2
+     }
+   },
+   {
+     _id: ObjectId('664dbad823dab71106e59623'),
+     treasure_id: Binary.createFromBase64('rhBaUmZiQL6hhuYcmDxadQ==', 0),
+     difficulty: 1,
+     terrain: 4,
+     city_name: 'Sherpur Para',
+     country_name: 'India',
+     country_code: 'IND',
+     stage: {
+       container_size: 2,
+       description: 'Cumque consectetur sequi sint.',
+       latitude: 26.563492929325086,
+       longitude: 82.13132995789448,
+       sequence_number: 2,
+       type: 0,
+       visibility: 1
+     }
+   }
+ ]
+ [direct: mongos] treasure_database>
+
+ if u wanna search for 6 random data based on the query we inserted:
+
+[direct: mongos] treasure_database> db.treasures.aggregate([{ $sample: { size: 6 } }])
+[
+  {
+    _id: ObjectId('664dbb0223dab71106e5a828'),
+    treasure_id: Binary.createFromBase64('aRl18S1bT2uUwurbtcrCIw==', 0),
+    difficulty: 2,
+    terrain: 2,
+    city_name: 'Inorahosahalli',
+    country_name: 'India',
+    country_code: 'IND',
+    stage: {
+      container_size: 2,
+      description: 'Quaerat id totam voluptas porro.',
+      latitude: 12.947097597823745,
+      longitude: 78.15045080335662,
+      sequence_number: 2,
+      type: 1,
+      visibility: 0
+    }
+  },
+  {
+    _id: ObjectId('664dbaf123dab71106e5a16d'),
+    treasure_id: Binary.createFromBase64('pv/8QfhxT627CXnidBbeoQ==', 0),
+    difficulty: 4,
+    terrain: 1,
+    city_name: 'Thombikandam',
+    country_name: 'India',
+    country_code: 'IND',
+    stage: {
+      container_size: 2,
+      description: 'Hic molestiae hic velit.',
+      latitude: 9.202305647764428,
+      longitude: 76.80831648707515,
+      sequence_number: 1,
+      type: 0,
+      visibility: 2
+    }
+  },
+  {
+    _id: ObjectId('664dbaf523dab71106e5a358'),
+    treasure_id: Binary.createFromBase64('2nusBFfhSk2zg2cX8+U91Q==', 0),
+    difficulty: 2,
+    terrain: 3,
+    city_name: 'Pretoria',
+    country_name: 'South Africa',
+    country_code: 'ZAF',
+    stage: {
+      container_size: 0,
+      description: 'Libero et dolore quo laboriosam.',
+      latitude: -25.710745380531502,
+      longitude: 28.228899879264883,
+      sequence_number: 1,
+      type: 1,
+      visibility: 1
+    }
+  },
+  {
+    _id: ObjectId('664dbae623dab71106e59c8e'),
+    treasure_id: Binary.createFromBase64('1QVXPhc4TPO3fdBiYjqLYw==', 0),
+    difficulty: 1,
+    terrain: 1,
+    city_name: 'R.A.Bazar',
+    country_name: 'India',
+    country_code: 'IND',
+    stage: {
+      container_size: 0,
+      description: 'Nemo a est consequatur atque.',
+      latitude: 28.756870915931966,
+      longitude: 77.99648835119791,
+      sequence_number: 2,
+      type: 0,
+      visibility: 2
+    }
+  },
+  {
+    _id: ObjectId('664dbadc23dab71106e597e6'),
+    treasure_id: Binary.createFromBase64('TPXOXHzVSteiz9QcqZDh6g==', 0),
+    difficulty: 2,
+    terrain: 1,
+    city_name: 'SAN MATEO',
+    country_name: 'Guatemala',
+    country_code: 'GTM',
+    stage: {
+      container_size: 1,
+      description: 'Voluptatibus quo est.',
+      latitude: 14.872927611263988,
+      longitude: -91.57840633777306,
+      sequence_number: 1,
+      type: 0,
+      visibility: 1
+    }
+  },
+  {
+    _id: ObjectId('664dbaea23dab71106e59e13'),
+    treasure_id: Binary.createFromBase64('NpBF4gt9QPed4bN1kipQdw==', 0),
+    difficulty: 3,
+    terrain: 2,
+    city_name: 'Gollaplli',
+    country_name: 'India',
+    country_code: 'IND',
+    stage: {
+      container_size: 2,
+      description: 'Aliquid quo sit inventore cum.',
+      latitude: 14.268310395155485,
+      longitude: 79.10352820921975,
+      sequence_number: 0,
+      type: 0,
+      visibility: 0
+    }
+  }
+]
+[direct: mongos] treasure_database>
+
+we can even do a search to check for the data based on the visibility being 1:
+]
+[direct: mongos] treasure_database> db.treasures.find({ "stage.visibility": 1 })
+[
+  {
+    _id: ObjectId('664dbacf23dab71106e592bf'),
+    treasure_id: Binary.createFromBase64('otB9UdGdTv2rzVN7jAULyQ==', 0),
+    difficulty: 2,
+    terrain: 2,
+    city_name: 'Schiersfeld',
+    country_name: 'Germany',
+    country_code: 'DEU',
+    stage: {
+      container_size: 3,
+      description: 'Facilis aut velit quia.',
+      latitude: 49.69951764546439,
+      longitude: 7.791043769656938,
+      sequence_number: 4,
+      type: 0,
+      visibility: 1
+    }
+  },
+  {
+    _id: ObjectId('664dbacf23dab71106e592c0'),
+    treasure_id: Binary.createFromBase64('jN/ARN8vTcOwK504t83oZw==', 0),
+    difficulty: 1,
+    terrain: 2,
+    city_name: 'Ajgain',
+    country_name: 'India',
+    country_code: 'IND',
+    stage: {
+      container_size: 0,
+      description: 'Velit aut laborum.',
+      latitude: 26.619283514560298,
+      longitude: 80.62907298246914,
+      sequence_number: 1,
+      type: 0,
+      visibility: 1
+    }
+  },
+  {
+    _id: ObjectId('664dbacf23dab71106e592c1'),
+    treasure_id: Binary.createFromBase64('0V4kxNs+RaSwAUhUjb4DJA==', 0),
+    difficulty: 1,
+    terrain: 4,
+    city_name: 'Dörtağaç',
+    country_name: 'Turkey',
+    country_code: 'TUR',
+    stage: {
+      container_size: 0,
+      description: 'Necessitatibus a ipsum totam est.',
+      latitude: 38.45152889714736,
+      longitude: 42.1584209983017,
+      sequence_number: 2,
+      type: 0,
+      visibility: 1
+    }
+  },
+  {
+    _id: ObjectId('664dbacf23dab71106e592c2'),
+    treasure_id: Binary.createFromBase64('W2DyKoiJQ7itst1d6Miq9w==', 0),
+    difficulty: 1,
+    terrain: 0,
+    city_name: 'Doutor Ricardo',
+    country_name: 'Brazil',
+    country_code: 'BRA',
+    stage: {
+      container_size: 0,
+      description: 'Blanditiis in rerum iusto et aut.',
+      latitude: -29.100692846094635,
+      longitude: -51.97141417821946,
+      sequence_number: 0,
+      type: 0,
+      visibility: 1
+    }
+  },
+  {
+    _id: ObjectId('664dbacf23dab71106e592c5'),
+    treasure_id: Binary.createFromBase64('5qBbXsCLSKCT3hi9LOJm8A==', 0),
+    difficulty: 2,
+    terrain: 1,
+    city_name: 'Doshincho',
+    country_name: 'Japan',
+    country_code: 'JPN',
+    stage: {
+      container_size: 3,
+      description: 'Est a soluta omnis dolores distinctio.',
+      latitude: 40.377785930158915,
+      longitude: 141.24941077114863,
+      sequence_number: 0,
+      type: 0,
+      visibility: 1
+    }
+  },
+  {
+    _id: ObjectId('664dbacf23dab71106e592c8'),
+    treasure_id: Binary.createFromBase64('WWEOMB0VRcKT79+lEoRGRQ==', 0),
+    difficulty: 3,
+    terrain: 2,
+    city_name: 'Янга-Аул',
+    country_name: 'Russian Federation',
+    country_code: 'RUS',
+    stage: {
+      container_size: 1,
+      description: 'Voluptatem ut minima cum porro accusamus.',
+      latitude: 56.11803211531517,
+      longitude: 48.89727833879287,
+      sequence_number: 4,
+      type: 0,
+      visibility: 1
+    }
+  },
+
+
+  how to search for a specific city name:
+  [direct: mongos] treasure_database> db.treasures.find({ "city_name": /Dörtağaç/i })
+  [
+    {
+      _id: ObjectId('664dbacf23dab71106e592c1'),
+      treasure_id: Binary.createFromBase64('0V4kxNs+RaSwAUhUjb4DJA==', 0),
+      difficulty: 1,
+      terrain: 4,
+      city_name: 'Dörtağaç',
+      country_name: 'Turkey',
+      country_code: 'TUR',
+      stage: {
+        container_size: 0,
+        description: 'Necessitatibus a ipsum totam est.',
+        latitude: 38.45152889714736,
+        longitude: 42.1584209983017,
+        sequence_number: 2,
+        type: 0,
+        visibility: 1
+      }
+    },
+    {
+      _id: ObjectId('664dbaf523dab71106e5a319'),
+      treasure_id: Binary.createFromBase64('0V4kxNs+RaSwAUhUjb4DJA==', 0),
+      difficulty: 1,
+      terrain: 4,
+      city_name: 'Dörtağaç',
+      country_name: 'Turkey',
+      country_code: 'TUR',
+      stage: {
+        container_size: 0,
+        description: 'Dolores veritatis rerum at maxime tenetur.',
+        latitude: 38.446185355519056,
+        longitude: 42.16195164280413,
+        sequence_number: 0,
+        type: 0,
+        visibility: 0
+      }
+    }
+  ]
+  [direct: mongos] treasure_database>
+
+
+  to show dat sharding is dere:
+  zamlamb@ZamLaptop:~$ docker exec -it mongodb_mongos-router-1_1 mongosh --eval 'sh.status()'
+  shardingVersion
+  { _id: 1, clusterId: ObjectId('664c822e540d3f05ebe9c7bd') }
+  ---
+  shards
+  [
+    {
+      _id: 'mongo-shard1-rs',
+      host: 'mongo-shard1-rs/mongodb_mongo-shard1-1_1:27017,mongodb_mongo-shard1-2_1:27017,mongodb_mongo-shard1-3_1:27017',
+      state: 1,
+      topologyTime: Timestamp({ t: 1716290109, i: 1 })
+    },
+    {
+      _id: 'mongo-shard2-rs',
+      host: 'mongo-shard2-rs/mongodb_mongo-shard2-1_1:27017,mongodb_mongo-shard2-2_1:27017,mongodb_mongo-shard2-3_1:27017',
+      state: 1,
+      topologyTime: Timestamp({ t: 1716290113, i: 2 })
+    },
+    {
+      _id: 'mongo-shard3-rs',
+      host: 'mongo-shard3-rs/mongodb_mongo-shard3-1_1:27017,mongodb_mongo-shard3-2_1:27017,mongodb_mongo-shard3-3_1:27017',
+      state: 1,
+      topologyTime: Timestamp({ t: 1716290116, i: 2 })
+    }
+  ]
+  ---
+  active mongoses
+  [ { '5.0.26': 2 } ]
+  ---
+  autosplit
+  { 'Currently enabled': 'yes' }
+  ---
+  balancer
+  {
+    'Currently enabled': 'yes',
+    'Currently running': 'no',
+    'Failed balancer rounds in last 5 attempts': 0,
+    'Migration Results for the last 24 hours': 'No recent migrations'
+  }
+  ---
+  databases
+  [
+    {
+      database: { _id: 'config', primary: 'config', partitioned: true },
+      collections: {
+        'config.system.sessions': {
+          shardKey: { _id: 1 },
+          unique: false,
+          balancing: true,
+          chunkMetadata: [
+            { shard: 'mongo-shard1-rs', nChunks: 342 },
+            { shard: 'mongo-shard2-rs', nChunks: 341 },
+            { shard: 'mongo-shard3-rs', nChunks: 341 }
+          ],
+          chunks: [
+            'too many chunks to print, use verbose if you want to force print'
+          ],
+          tags: []
+        }
+      }
+    },
+    {
+      database: {
+        _id: 'treasure_database',
+        primary: 'mongo-shard3-rs',
+        partitioned: true,
+        version: {
+          uuid: UUID('6617f939-b318-4711-8cd2-e7524aa23aa1'),
+          timestamp: Timestamp({ t: 1716290361, i: 41 }),
+          lastMod: 1
+        }
+      },
+      collections: {
+        'treasure_database.treasures': {
+          shardKey: { location: 'hashed' },
+          unique: false,
+          balancing: true,
+          chunkMetadata: [
+            { shard: 'mongo-shard1-rs', nChunks: 2 },
+            { shard: 'mongo-shard2-rs', nChunks: 2 },
+            { shard: 'mongo-shard3-rs', nChunks: 2 }
+          ],
+          chunks: [
+            { min: { location: MinKey() }, max: { location: Long('-6148914691236517204') }, 'on shard': 'mongo-shard1-rs',
+   'last modified': Timestamp({ t: 1, i: 0 }) },
+            { min: { location: Long('-6148914691236517204') }, max: { location: Long('-3074457345618258602') }, 'on shard': 'mongo-shard1-rs', 'last modified': Timestamp({ t: 1, i: 1 }) },
+            { min: { location: Long('-3074457345618258602') }, max: { location: Long('0') }, 'on shard': 'mongo-shard2-rs', 'last modified': Timestamp({ t: 1, i: 2 }) },
+            { min: { location: Long('0') }, max: { location: Long('3074457345618258602') }, 'on shard': 'mongo-shard2-rs',
+   'last modified': Timestamp({ t: 1, i: 3 }) },
+            { min: { location: Long('3074457345618258602') }, max: { location: Long('6148914691236517204') }, 'on shard': 'mongo-shard3-rs', 'last modified': Timestamp({ t: 1, i: 4 }) },
+            { min: { location: Long('6148914691236517204') }, max: { location: MaxKey() }, 'on shard': 'mongo-shard3-rs', 'last modified': Timestamp({ t: 1, i: 5 }) }
+          ],
+          tags: []
+        }
+      }
+    }
+  ]
+
+  had to drop database as used the wrong shard key, here is the right one:
+  direct: mongos] treasure_database> db.treasures.createIndex({ "city_name": 1 })
+  city_name_1
+  [direct: mongos] treasure_database> sh.enableSharding("treasure_database")
+  {
+    ok: 1,
+    '$clusterTime': {
+      clusterTime: Timestamp({ t: 1716406629, i: 1 }),
+      signature: {
+        hash: Binary.createFromBase64('AAAAAAAAAAAAAAAAAAAAAAAAAAA=', 0),
+        keyId: Long('0')
+      }
+    },
+    operationTime: Timestamp({ t: 1716406629, i: 1 })
+  }
+  [direct: mongos] treasure_database> sh.shardCollection("treasure_database.treasures", { "city_name": 1 })
+  {
+    collectionsharded: 'treasure_database.treasures',
+    ok: 1,
+    '$clusterTime': {
+      clusterTime: Timestamp({ t: 1716406634, i: 30 }),
+      signature: {
+        hash: Binary.createFromBase64('AAAAAAAAAAAAAAAAAAAAAAAAAAA=', 0),
+        keyId: Long('0')
+      }
+    },
+    operationTime: Timestamp({ t: 1716406634, i: 26 })
+  }
+  [direct: mongos] treasure_database>
+
+  [direct: mongos] treasure_database> sh.status()
+  shardingVersion
+  { _id: 1, clusterId: ObjectId('664c822e540d3f05ebe9c7bd') }
+  ---
+  shards
+  [
+    {
+      _id: 'mongo-shard1-rs',
+      host: 'mongo-shard1-rs/mongodb_mongo-shard1-1_1:27017,mongodb_mongo-shard1-2_1:27017,mongodb_mongo-shard1-3_1:27017',
+      state: 1,
+      topologyTime: Timestamp({ t: 1716290109, i: 1 })
+    },
+    {
+      _id: 'mongo-shard2-rs',
+      host: 'mongo-shard2-rs/mongodb_mongo-shard2-1_1:27017,mongodb_mongo-shard2-2_1:27017,mongodb_mongo-shard2-3_1:27017',
+      state: 1,
+      topologyTime: Timestamp({ t: 1716290113, i: 2 })
+    },
+    {
+      _id: 'mongo-shard3-rs',
+      host: 'mongo-shard3-rs/mongodb_mongo-shard3-1_1:27017,mongodb_mongo-shard3-2_1:27017,mongodb_mongo-shard3-3_1:27017',
+      state: 1,
+      topologyTime: Timestamp({ t: 1716290116, i: 2 })
+    }
+  ]
+  ---
+  active mongoses
+  [ { '5.0.26': 2 } ]
+  ---
+  autosplit
+  { 'Currently enabled': 'yes' }
+  ---
+  balancer
+  {
+    'Currently running': 'no',
+    'Currently enabled': 'yes',
+    'Failed balancer rounds in last 5 attempts': 0,
+    'Migration Results for the last 24 hours': 'No recent migrations'
+  }
+  ---
+  databases
+  [
+    {
+      database: { _id: 'config', primary: 'config', partitioned: true },
+      collections: {
+        'config.system.sessions': {
+          shardKey: { _id: 1 },
+          unique: false,
+          balancing: true,
+          chunkMetadata: [
+            { shard: 'mongo-shard1-rs', nChunks: 342 },
+            { shard: 'mongo-shard2-rs', nChunks: 341 },
+            { shard: 'mongo-shard3-rs', nChunks: 341 }
+          ],
+          chunks: [
+            'too many chunks to print, use verbose if you want to force print'
+          ],
+          tags: []
+        }
+      }
+    },
+    {
+      database: {
+        _id: 'test',
+        primary: 'mongo-shard1-rs',
+        partitioned: false,
+        version: {
+          uuid: UUID('2975478d-560c-414b-a386-10b5e87dd68d'),
+          timestamp: Timestamp({ t: 1716406088, i: 1 }),
+          lastMod: 1
+        }
+      },
+      collections: {}
+    },
+    {
+      database: {
+        _id: 'treasure_database',
+        primary: 'mongo-shard1-rs',
+        partitioned: true,
+        version: {
+          uuid: UUID('fbb2a25e-7a23-4cbc-8ffc-e5688877443b'),
+          timestamp: Timestamp({ t: 1716406551, i: 1 }),
+          lastMod: 1
+        }
+      },
+      collections: {
+        'treasure_database.treasures': {
+          shardKey: { city_name: 1 },
+          unique: false,
+          balancing: true,
+          chunkMetadata: [ { shard: 'mongo-shard1-rs', nChunks: 1 } ],
+          chunks: [
+            { min: { city_name: MinKey() }, max: { city_name: MaxKey() }, 'on shard': 'mongo-shard1-rs', 'last modified': Timestamp({ t: 1, i: 0 }) }
+          ],
+          tags: []
+        }
+      }
+    }
+  ]
+
+  showing dat da shard key being used:
+
+[direct: mongos] treasure_database> db.treasures.find({ "city_name": /Dörtağaç/i }).explain("executionStats")
+{
+  queryPlanner: {
+    mongosPlannerVersion: 1,
+    winningPlan: {
+      stage: 'SINGLE_SHARD',
+      shards: [
+        {
+          shardName: 'mongo-shard1-rs',
+          connectionString: 'mongo-shard1-rs/mongodb_mongo-shard1-1_1:27017,mongodb_mongo-shard1-2_1:27017,mongodb_mongo-shard1-3_1:27017',
+          serverInfo: {
+            host: '78ae9abc5488',
+            port: 27017,
+            version: '5.0.26',
+            gitVersion: '0b4f1ea980b5380a66425a90b414106a191365f4'
+          },
+          namespace: 'treasure_database.treasures',
+          indexFilterSet: false,
+          parsedQuery: { city_name: { '$regex': 'Dörtağaç', '$options': 'i' } },
+          maxIndexedOrSolutionsReached: false,
+          maxIndexedAndSolutionsReached: false,
+          maxScansToExplodeReached: false,
+          winningPlan: {
+            stage: 'FETCH',
+            inputStage: {
+              stage: 'SHARDING_FILTER',
+              inputStage: {
+                stage: 'IXSCAN',
+                filter: {
+                  city_name: { '$regex': 'Dörtağaç', '$options': 'i' }
+                },
+                keyPattern: { city_name: 1 },
+                indexName: 'city_name_1',
+                isMultiKey: false,
+                multiKeyPaths: { city_name: [] },
+                isUnique: false,
+                isSparse: false,
+                isPartial: false,
+                indexVersion: 2,
+                direction: 'forward',
+                indexBounds: {
+                  city_name: [ '["", {})', '[/Dörtağaç/i, /Dörtağaç/i]' ]
+                }
+              }
+            }
+          },
+          rejectedPlans: []
+        }
+      ]
+    }
+  },
+  executionStats: {
+    nReturned: 4,
+    executionTimeMillis: 70,
+    totalKeysExamined: 54686,
+    totalDocsExamined: 4,
+    executionStages: {
+      stage: 'SINGLE_SHARD',
+      nReturned: 4,
+      executionTimeMillis: 70,
+      totalKeysExamined: 54686,
+      totalDocsExamined: 4,
+      totalChildMillis: Long('63'),
+      shards: [
+        {
+          shardName: 'mongo-shard1-rs',
+          executionSuccess: true,
+          nReturned: 4,
+          executionTimeMillis: 63,
+          totalKeysExamined: 54686,
+          totalDocsExamined: 4,
+          executionStages: {
+            stage: 'FETCH',
+            nReturned: 4,
+            executionTimeMillisEstimate: 7,
+            works: 54687,
+            advanced: 4,
+            needTime: 54682,
+            needYield: 0,
+            saveState: 54,
+            restoreState: 54,
+            isEOF: 1,
+            docsExamined: 4,
+            alreadyHasObj: 0,
+            inputStage: {
+              stage: 'SHARDING_FILTER',
+              nReturned: 4,
+              executionTimeMillisEstimate: 7,
+              works: 54687,
+              advanced: 4,
+              needTime: 54682,
+              needYield: 0,
+              saveState: 54,
+              restoreState: 54,
+              isEOF: 1,
+              chunkSkips: 0,
+              inputStage: {
+                stage: 'IXSCAN',
+                filter: {
+                  city_name: { '$regex': 'Dörtağaç', '$options': 'i' }
+                },
+                nReturned: 4,
+                executionTimeMillisEstimate: 7,
+                works: 54687,
+                advanced: 4,
+                needTime: 54682,
+                needYield: 0,
+                saveState: 54,
+                restoreState: 54,
+                isEOF: 1,
+                keyPattern: { city_name: 1 },
+                indexName: 'city_name_1',
+                isMultiKey: false,
+                multiKeyPaths: { city_name: [] },
+                isUnique: false,
+                isSparse: false,
+                isPartial: false,
+                indexVersion: 2,
+                direction: 'forward',
+                indexBounds: {
+                  city_name: [ '["", {})', '[/Dörtağaç/i, /Dörtağaç/i]' ]
+                },
+                keysExamined: 54686,
+                seeks: 1,
+                dupsTested: 0,
+                dupsDropped: 0
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  serverInfo: {
+    host: 'b4d56766ce5b',
+    port: 27017,
+    version: '5.0.26',
+    gitVersion: '0b4f1ea980b5380a66425a90b414106a191365f4'
+  },
+  serverParameters: {
+    internalQueryFacetBufferSizeBytes: 104857600,
+    internalQueryFacetMaxOutputDocSizeBytes: 104857600,
+    internalLookupStageIntermediateDocumentMaxSizeBytes: 104857600,
+    internalDocumentSourceGroupMaxMemoryBytes: 104857600,
+    internalQueryMaxBlockingSortMemoryUsageBytes: 104857600,
+    internalQueryProhibitBlockingMergeOnMongoS: 0,
+    internalQueryMaxAddToSetBytes: 104857600,
+    internalDocumentSourceSetWindowFieldsMaxMemoryBytes: 104857600
+  },
+  command: {
+    find: 'treasures',
+    filter: { city_name: /Dörtağaç/i },
+    lsid: { id: UUID('9b8adf49-862e-44fd-8e0f-e2abefc6bdbc') },
+    '$clusterTime': {
+      clusterTime: Timestamp({ t: 1716406873, i: 1 }),
+      signature: {
+        hash: Binary.createFromBase64('AAAAAAAAAAAAAAAAAAAAAAAAAAA=', 0),
+        keyId: Long('0')
+      }
+    },
+    '$db': 'treasure_database'
+  },
+  ok: 1,
+  '$clusterTime': {
+    clusterTime: Timestamp({ t: 1716407000, i: 3 }),
+    signature: {
+      hash: Binary.createFromBase64('AAAAAAAAAAAAAAAAAAAAAAAAAAA=', 0),
+      keyId: Long('0')
+    }
+  },
+  operationTime: Timestamp({ t: 1716406997, i: 2 })
+}
+[direct: mongos] treasure_database>
+
+[direct: mongos] treasure_database> db.treasures.find({ "city_name": /Dörtağaç/i })
+[
+  {
+    _id: ObjectId('664e492478adb6c773b87bae'),
+    '#': 4,
+    treasure_id: UUID('d15e24c4-db3e-45a4-b001-48548dbe0324'),
+    difficulty: 1,
+    terrain: 4,
+    city_name: 'Dörtağaç',
+    country_name: 'Turkey',
+    country_code: 'TUR',
+    container_size: 0,
+    stage_description: 'Necessitatibus a ipsum totam est.',
+    stage_latitude: 38.45152889714736,
+    stage_longitude: 42.1584209983017,
+    sequence_number: 2,
+    stage_type: 0,
+    visibility: 1
+  },
+  {
+    _id: ObjectId('664e492578adb6c773b88c06'),
+    '#': 4188,
+    treasure_id: UUID('d15e24c4-db3e-45a4-b001-48548dbe0324'),
+    difficulty: 1,
+    terrain: 4,
+    city_name: 'Dörtağaç',
+    country_name: 'Turkey',
+    country_code: 'TUR',
+    container_size: 0,
+    stage_description: 'Dolores veritatis rerum at maxime tenetur.',
+    stage_latitude: 38.446185355519056,
+    stage_longitude: 42.16195164280413,
+    sequence_number: 0,
+    stage_type: 0,
+    visibility: 0
+  },
+  {
+    _id: ObjectId('664e492878adb6c773b902fb'),
+    '#': 34641,
+    treasure_id: UUID('d15e24c4-db3e-45a4-b001-48548dbe0324'),
+    difficulty: 1,
+    terrain: 4,
+    city_name: 'Dörtağaç',
+    country_name: 'Turkey',
+    country_code: 'TUR',
+    container_size: 3,
+    stage_description: 'Corporis id quos.',
+    stage_latitude: 38.446255602924126,
+    stage_longitude: 42.16170521034321,
+    sequence_number: 1,
+    stage_type: 0,
+    visibility: 0
+  },
+  {
+    _id: ObjectId('664e492978adb6c773b90781'),
+    '#': 35799,
+    treasure_id: UUID('d15e24c4-db3e-45a4-b001-48548dbe0324'),
+    difficulty: 1,
+    terrain: 4,
+    city_name: 'Dörtağaç',
+    country_name: 'Turkey',
+    country_code: 'TUR',
+    container_size: 0,
+    stage_description: 'Nihil consequatur recusandae.',
+    stage_latitude: 38.454396539541904,
+    stage_longitude: 42.15389879750495,
+    sequence_number: 3,
+    stage_type: 0,
+    visibility: 2
+  }
+]
+[direct: mongos] treasure_database>
