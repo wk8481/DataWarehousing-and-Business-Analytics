@@ -188,6 +188,21 @@ GROUP BY
     u.address
 ORDER BY
     FoundCount DESC;
+
+--
+SELECT
+    RIGHT(u.address, CHARINDEX(' ', REVERSE(u.address)) - 1) AS Country,
+    COUNT(*) AS FoundCount
+FROM
+    factTreasureFound AS f
+        INNER JOIN
+    dimUser AS u ON f.DIM_USER_SK = u.user_SK
+GROUP BY
+    RIGHT(u.address, CHARINDEX(' ', REVERSE(u.address)) - 1)
+ORDER BY
+    FoundCount DESC;
+
+
 --output
 -- Location	FoundCount
 -- 143 Okuneva Passage Молодіжне Ukraine	6
