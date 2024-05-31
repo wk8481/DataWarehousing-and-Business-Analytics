@@ -34,41 +34,41 @@ query = """
     INNER JOIN
         stage AS s ON ts.stages_id = s.id
 """
-cursor.execute(query)
-treasures_data = cursor.fetchall()
-
-# Close the connection to the CATCHEM database
-conn.close()
-
-# Connect to MongoDB through the mongos router
-mongo_client = MongoClient("mongodb://localhost:27017")
-db = mongo_client["treasure_database"]
-treasures_collection = db["treasures"]
-
-# Insert data into the MongoDB collection
-for treasure in treasures_data:
-    treasures_collection.insert_one({
-        "treasure_id": treasure[0],
-        "difficulty": treasure[1],
-        "terrain": treasure[2],
-        "city_name": treasure[3],
-        "country_name": treasure[4],
-        "country_code": treasure[5],
-        "stage": {
-            "container_size": treasure[6],
-            "description": treasure[7],
-            "latitude": treasure[8],
-            "longitude": treasure[9],
-            "sequence_number": treasure[10],
-            "type": treasure[11],
-            "visibility": treasure[12]
-        }
-    })
-
-# Enable sharding on the database and shard the collection
-admin_db = mongo_client.admin
-admin_db.command("enableSharding", "treasure_database")
-admin_db.command("shardCollection", "treasure_database.treasures", key={"city_name": 1})
-
-# Print confirmation message
-print("Sharding enabled and collection sharded successfully.")
+# cursor.execute(query)
+# treasures_data = cursor.fetchall()
+#
+# # Close the connection to the CATCHEM database
+# conn.close()
+#
+# # Connect to MongoDB through the mongos router
+# mongo_client = MongoClient("mongodb://localhost:27017")
+# db = mongo_client["treasure_database"]
+# treasures_collection = db["treasures"]
+#
+# # Insert data into the MongoDB collection
+# for treasure in treasures_data:
+#     treasures_collection.insert_one({
+#         "treasure_id": treasure[0],
+#         "difficulty": treasure[1],
+#         "terrain": treasure[2],
+#         "city_name": treasure[3],
+#         "country_name": treasure[4],
+#         "country_code": treasure[5],
+#         "stage": {
+#             "container_size": treasure[6],
+#             "description": treasure[7],
+#             "latitude": treasure[8],
+#             "longitude": treasure[9],
+#             "sequence_number": treasure[10],
+#             "type": treasure[11],
+#             "visibility": treasure[12]
+#         }
+#     })
+#
+# # Enable sharding on the database and shard the collection
+# admin_db = mongo_client.admin
+# admin_db.command("enableSharding", "treasure_database")
+# admin_db.command("shardCollection", "treasure_database.treasures", key={"city_name": 1})
+#
+# # Print confirmation message
+# print("Sharding enabled and collection sharded successfully.")
