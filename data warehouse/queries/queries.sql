@@ -228,7 +228,7 @@ ORDER BY
 -- This indicates that the popularity of caches may vary depending on the geographic location, with certain locations having higher activity or more caches to be found.
 
 
--- Are there caches which are more popular at the moment and sought after by various people?
+-- Which caches are most popular based on difficulty level?
 SELECT
     tt.difficulty,
     COUNT(*) AS FoundCount
